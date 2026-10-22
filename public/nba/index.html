@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NBA Trade Machine 2026-27</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Build NBA trades between any two teams and check them against the 2026-27 salary cap, tax line and both aprons. Live contracts, picks with protections, and an AI scouting report.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="NBA Trade Machine 2026-27">
+<meta property="og:description" content="Build NBA trades between any two teams and check them against the 2026-27 cap, tax and aprons, plus an AI scouting report.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b0e13">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Graduate&family=Saira+Condensed:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+html,body{margin:0}
+/* Layout: arena tool — header with a court-line rule, two team boards side by side (stack on phone), shot-clock scoreboard + trade tray beneath. */
+:root{
+  --floor:#eef1f5; --board:#ffffff; --board2:#f6f8fa; --ink:#111827; --muted:#5b6474; --line:#d9dee6;
+  --orange:#d9541e; --orange-soft:#fbe9e0; --navy:#1f3a6e; --navy-soft:#e5ebf5;
+  --good:#17784a; --good-soft:#e2f3ea; --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#c8102e; --bad-soft:#fbe7ea;
+  --shadow:0 1px 0 rgba(17,24,39,.04),0 6px 20px -12px rgba(17,24,39,.18);
+  --f-display:"Saira Condensed","Arial Narrow",Impact,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --wm-lift:0%;--wm-fill:.07;--wm-stroke:.22;--glow:.16;--slat:#ece6dc;--slat2:#d9cfbf;
+  --sb-bg:#0b0d10;--sb-panel:#13161b;--sb-line:#262b33;--sb-amber:#ffb23f;--sb-dim:#7f8793;--sb-green:#38e08a;--sb-red:#ff3b4e;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --floor:#0b0e13; --board:#141920; --board2:#10141a; --ink:#e6eaf0; --muted:#8e97a5; --line:#262d38;
+  --orange:#ff7a3d; --orange-soft:#3a2216; --navy:#86a8ec; --navy-soft:#18233a;
+  --good:#4fc98e; --good-soft:#123326; --warn:#f2b350; --warn-soft:#3a2b10; --bad:#ff5c70; --bad-soft:#3d1720;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);
+  --wm-lift:55%;--wm-fill:.06;--wm-stroke:.2;--glow:.22;--slat:#1a1712;--slat2:#2a241b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --floor:#0b0e13; --board:#141920; --board2:#10141a; --ink:#e6eaf0; --muted:#8e97a5; --line:#262d38;
+  --orange:#ff7a3d; --orange-soft:#3a2216; --navy:#86a8ec; --navy-soft:#18233a;
+  --good:#4fc98e; --good-soft:#123326; --warn:#f2b350; --warn-soft:#3a2b10; --bad:#ff5c70; --bad-soft:#3d1720;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7);
+  --wm-lift:55%;--wm-fill:.06;--wm-stroke:.2;--glow:.22;--slat:#1a1712;--slat2:#2a241b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--floor);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:grid;gap:18px;position:relative;z-index:1}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* team watermarks */
+.wm{position:fixed;top:0;bottom:0;width:50vw;z-index:0;pointer-events:none;overflow:hidden;display:flex;align-items:center;--wcl:color-mix(in srgb,var(--wc,#888),white var(--wm-lift))}
+.wm-a{left:0;justify-content:flex-start;background:radial-gradient(ellipse 60% 70% at 0% 50%,color-mix(in srgb,var(--wcl) calc(var(--glow)*100%),transparent),transparent 70%)}
+.wm-b{right:0;justify-content:flex-end;background:radial-gradient(ellipse 60% 70% at 100% 50%,color-mix(in srgb,var(--wcl) calc(var(--glow)*100%),transparent),transparent 70%)}
+.wm span{font-family:var(--f-display);font-weight:800;line-height:.8;letter-spacing:.02em;white-space:nowrap;writing-mode:vertical-rl;font-size:clamp(140px,min(38vh,26vw),420px);color:color-mix(in srgb,var(--wcl) calc(var(--wm-fill)*100%),transparent);-webkit-text-stroke:2px color-mix(in srgb,var(--wcl) calc(var(--wm-stroke)*100%),transparent)}
+.wm-a span{transform:rotate(180deg);margin-left:-.06em}
+.wm-b span{margin-right:-.06em}
+.team,.tray,.saved{background:color-mix(in srgb,var(--board) 86%,transparent)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* header with a court-line rule: baseline + center circle */
+.top{position:relative;display:grid;gap:10px;padding-block:6px 18px}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:7px;height:2px;background:var(--line)}
+.top::before{content:"";position:absolute;left:50%;bottom:0;width:16px;height:16px;margin-left:-8px;border-radius:50%;border:2px solid var(--orange);background:var(--floor);z-index:1}
+.top-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,44px);line-height:.95;letter-spacing:.01em;margin:0;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--orange)}
+.sub{color:var(--muted);margin:0;max-width:64ch}
+.facts{display:flex;flex-wrap:wrap;gap:6px}
+.fact{border:1px solid var(--line);background:var(--board);border-radius:999px;padding:3px 10px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.fact b{color:var(--ink);font-family:var(--f-num);font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--board);border-radius:8px;padding:7px 12px;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.btn:hover{border-color:var(--orange)}
+.btn.primary{background:var(--ink);color:var(--board);border-color:var(--ink)}
+.btn.primary:hover{opacity:.9}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* boards */
+.boards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.boards{grid-template-columns:minmax(0,1fr)}}
+.team{border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:0;display:grid;overflow:hidden}
+.team-head{display:grid;gap:10px;padding:14px 14px 12px;border-top:5px solid var(--tc,var(--line))}
+.pick-row{display:flex;gap:10px;align-items:center}
+.side-tag{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);flex:none}
+.team-select{flex:1;min-width:0;border:1px solid var(--line);background:var(--board2);border-radius:8px;padding:8px 10px;font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.02em}
+.meta{font-size:12.5px;color:var(--muted)}
+.head-body{display:grid;grid-template-columns:clamp(118px,30%,170px) minmax(0,1fr);gap:14px;align-items:start}
+.head-info{display:grid;gap:8px;min-width:0}
+.pill-hard{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:4px;padding:1px 6px;background:var(--warn-soft);color:var(--warn)}
+
+/* locker stall rack */
+.jersey{margin:0;display:grid;gap:6px;justify-items:center;text-align:center;min-width:0}
+.stall{position:relative;width:100%;aspect-ratio:1/1.02;max-width:100%;border-radius:6px 6px 2px 2px;overflow:hidden;background:repeating-linear-gradient(90deg,var(--slat) 0 16px,var(--slat2) 16px 17px),var(--board2);box-shadow:inset 0 10px 18px -12px rgba(0,0,0,.45),inset 0 -1px 0 var(--line)}
+.stall::before{content:"";position:absolute;left:6%;right:6%;top:12px;height:4px;border-radius:2px;background:linear-gradient(180deg,#d9dee3,#8d969f 60%,#5f6870);box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.hang{position:absolute;top:2px;width:76%;left:12%;border:0;padding:0;background:none;cursor:pointer;transition:transform .25s ease,filter .25s ease}
+.hang svg{width:100%;height:auto;display:block;filter:drop-shadow(0 5px 6px rgba(0,0,0,.3))}
+.hang.front{z-index:3;cursor:default}
+.hang.back{z-index:1;filter:brightness(.82) saturate(.9)}
+.hang.back.l{transform:translateX(-27%) scale(.84) rotate(-4deg)}
+.hang.back.r{transform:translateX(27%) scale(.84) rotate(4deg)}
+.hang.back:hover{filter:none}
+.more{position:absolute;right:6px;bottom:6px;z-index:4;background:var(--ink);color:var(--board);font-weight:700;font-size:11px;border-radius:999px;padding:1px 7px}
+.jersey figcaption{display:grid;gap:1px;font-size:12.5px;line-height:1.25;min-width:0;max-width:100%}
+.jersey figcaption b{font-weight:700;font-size:13.5px;overflow-wrap:anywhere}
+.jersey figcaption span{color:var(--muted)}
+.cycle{display:flex;align-items:center;gap:6px;justify-content:center;font-family:var(--f-num);font-size:11.5px;color:var(--muted)}
+.cycle button{border:1px solid var(--line);background:var(--board);border-radius:50%;width:22px;height:22px;line-height:1;cursor:pointer;padding:0;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.hang{transition:none}}
+
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stat{background:var(--board2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.stat .v{font-family:var(--f-num);font-weight:600;font-size:15px;white-space:nowrap}
+.stat .v.neg{color:var(--bad)} .stat .v.pos{color:var(--good)}
+.gauge{position:relative;height:16px;border-radius:4px;background:var(--board2);border:1px solid var(--line);overflow:hidden}
+.gauge .zone{position:absolute;top:0;bottom:0;opacity:.14}
+.gauge .fill{position:absolute;top:3px;bottom:3px;left:0;border-radius:2px;background:var(--navy)}
+.gauge .fill.over{background:var(--bad)}
+.gauge .tick{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--muted)}
+.gauge .tick.t-tax{background:var(--warn)} .gauge .tick.t-a1{background:var(--orange)} .gauge .tick.t-a2{background:var(--bad)}
+.gauge-legend{display:flex;justify-content:space-between;gap:4px;font-size:10.5px;color:var(--muted);font-family:var(--f-num);flex-wrap:wrap}
+.tabs{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--board2);overflow-x:auto}
+.tab{flex:1;border:0;background:transparent;padding:9px 8px;font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--orange)}
+.tab .c{font-family:var(--f-num);font-weight:500;font-size:11px;margin-left:4px;color:var(--muted)}
+.filters{display:flex;gap:8px;padding:10px 14px;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:140px;border:1px solid var(--line);background:var(--board2);border-radius:8px;padding:6px 10px;font-size:14px}
+.chips{display:flex;gap:4px}
+.chip{border:1px solid var(--line);background:var(--board);border-radius:6px;padding:4px 9px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--board);border-color:var(--ink)}
+.list{max-height:560px;overflow-y:auto;border-top:1px solid var(--line)}
+.grp{position:sticky;top:0;z-index:1;background:var(--board2);border-bottom:1px solid var(--line);padding:5px 14px;font-family:var(--f-display);font-weight:700;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:var(--board2)}
+.row.sel{background:var(--orange-soft)}
+.row.off{cursor:not-allowed;opacity:.6}
+.row.off:hover{background:transparent}
+/* add button: a ball with a seam */
+.add{width:26px;height:26px;border-radius:50%;border:2px solid var(--orange);background:var(--board);display:grid;place-items:center;font-weight:700;font-size:15px;line-height:1;color:var(--orange);cursor:pointer;padding:0;position:relative;overflow:hidden}
+.add::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:color-mix(in srgb,var(--orange) 35%,transparent)}
+.row:hover .add{background:var(--orange-soft)}
+.row.sel .add{background:var(--orange);color:#fff}
+.row.sel .add::before{background:rgba(255,255,255,.35)}
+.row.off .add{border-color:var(--line);color:var(--muted)}
+.pname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pnum{font-family:var(--f-num);font-weight:500;font-size:.88em;color:var(--muted)}
+.pline{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12.5px;color:var(--muted);align-items:center}
+.pnote{font-size:12px;color:var(--muted);white-space:normal}
+.pcap{text-align:right}
+.pcap .amt{font-family:var(--f-num);font-weight:600;font-size:14.5px}
+.pcap .term{font-size:12px;color:var(--muted);font-family:var(--f-num);white-space:nowrap}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.04em;border-radius:4px;padding:1px 5px;border:1px solid var(--line);color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.badge.cl{border-color:var(--bad);color:var(--bad)}
+.badge.lock{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.badge.opt{background:var(--navy-soft);border-color:transparent;color:var(--navy)}
+.badge.ng{background:var(--orange-soft);border-color:transparent;color:var(--orange)}
+.empty{padding:24px 14px;color:var(--muted);text-align:center}
+
+/* scout's take */
+.scout{margin:0 12px 12px;border:1px solid var(--line);border-radius:10px;background:var(--board2);display:grid;overflow:hidden}
+.scout-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px}
+.scout-head h3{margin:0;font-family:var(--f-display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.06em}
+.scout-note{font-size:12.5px;color:var(--muted)}
+.scout-body:empty{display:none}
+.scout-body{border-top:1px solid var(--line);padding:12px 14px;display:grid;gap:12px}
+.scout-wait{color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
+.ball{width:12px;height:12px;border-radius:50%;background:var(--orange);animation:bounce .7s cubic-bezier(.4,0,.6,1) infinite alternate}
+@keyframes bounce{from{transform:translateY(-6px)}to{transform:translateY(5px) scaleX(1.12) scaleY(.88)}}
+@media (prefers-reduced-motion:reduce){.ball{animation:none}}
+.grades{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.grades{grid-template-columns:1fr}}
+.grade{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;background:var(--board);border:1px solid var(--line);border-radius:8px;padding:12px;border-top:4px solid var(--tc)}
+.gl{font-family:Graduate,var(--f-display);font-size:34px;line-height:1;min-width:58px;text-align:center;padding:8px 4px;border-radius:6px;background:var(--gbg);color:var(--gfg)}
+.grade h4{margin:0 0 4px;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.02em;text-wrap:balance}
+.grade .who{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.grade p{margin:4px 0 0;font-size:14px;line-height:1.5}
+.g-a{--gbg:var(--good-soft);--gfg:var(--good)} .g-b{--gbg:var(--navy-soft);--gfg:var(--navy)} .g-c{--gbg:var(--warn-soft);--gfg:var(--warn)} .g-d{--gbg:var(--bad-soft);--gfg:var(--bad)}
+.scout-verdict{font-weight:600;font-size:14.5px;border-left:3px solid var(--orange);padding-left:10px}
+.scout-err{color:var(--bad);font-size:14px}
+
+/* trade tray + shot-clock scoreboard (dark in both themes, like an arena board) */
+.tray{border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:grid;min-width:0}
+.scoreboard{margin:12px;border-radius:10px;background:var(--sb-bg);border:3px solid var(--sb-line);box-shadow:inset 0 0 0 1px #000,0 8px 18px -10px rgba(0,0,0,.6);display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;color:#e9eef3;overflow:hidden}
+.sb-team{display:grid;gap:2px;padding:12px 14px;justify-items:center;text-align:center;background:var(--sb-panel);min-width:0}
+.sb-tri{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.14em;color:#fff;display:flex;align-items:center;gap:8px}
+.sb-tri i{width:10px;height:10px;border-radius:2px;background:var(--tc)}
+.sb-val{font-family:var(--f-num);font-weight:600;font-size:clamp(20px,3.4vw,30px);color:var(--sb-amber);text-shadow:0 0 10px color-mix(in srgb,var(--sb-amber) 55%,transparent);letter-spacing:.02em;white-space:nowrap}
+.sb-val.neg{color:var(--sb-red);text-shadow:0 0 10px color-mix(in srgb,var(--sb-red) 55%,transparent)}
+.sb-lbl{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--sb-dim);font-weight:600}
+.sb-mid{display:grid;justify-items:center;align-content:center;gap:7px;padding:10px 16px;border-inline:2px solid var(--sb-line);min-width:140px}
+.sb-mid h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:13px;letter-spacing:.22em;color:var(--sb-dim);text-transform:uppercase}
+.ledbar{width:84px;height:8px;border-radius:2px;background:repeating-linear-gradient(90deg,#2a2f37 0 6px,transparent 6px 8px)}
+.verdict{font-family:var(--f-display);font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;text-align:center;color:var(--sb-dim);max-width:17ch;line-height:1.1}
+.verdict.ok{color:var(--sb-green)} .verdict.no{color:var(--sb-red)}
+.scoreboard.ok .ledbar{background:repeating-linear-gradient(90deg,var(--sb-green) 0 6px,transparent 6px 8px);filter:drop-shadow(0 0 6px var(--sb-green))}
+.scoreboard.no .ledbar{background:repeating-linear-gradient(90deg,var(--sb-red) 0 6px,transparent 6px 8px);filter:drop-shadow(0 0 8px var(--sb-red));animation:buzz 1.1s steps(2,end) infinite}
+@keyframes buzz{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.scoreboard.no .ledbar{animation:none}}
+@media (max-width:560px){.scoreboard{grid-template-columns:1fr 1fr}.sb-mid{grid-column:1/-1;grid-row:1;border-inline:0;border-bottom:2px solid var(--sb-line);grid-auto-flow:column;min-width:0}}
+.sides{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:860px){.sides{grid-template-columns:minmax(0,1fr)}}
+.side{padding:14px;display:grid;gap:12px;align-content:start;min-width:0}
+.side+.side{border-left:1px solid var(--line)}
+@media (max-width:860px){.side+.side{border-left:0;border-top:1px solid var(--line)}}
+.side h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.04em;display:flex;gap:8px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px;background:var(--tc);flex:none;border:1px solid var(--line)}
+.recv{display:grid;gap:6px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--board2)}
+.item .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .sm{font-size:12px;color:var(--muted)}
+.item .amt{font-family:var(--f-num);font-weight:600;font-size:14px;text-align:right;white-space:nowrap}
+.x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px}
+.x:hover{color:var(--bad)}
+.none{color:var(--muted);font-size:14px;border:1px dashed var(--line);border-radius:8px;padding:10px;text-align:center}
+.ledger{width:100%;border-collapse:collapse;font-size:13.5px}
+.ledger td{padding:4px 0;border-bottom:1px solid var(--line)}
+.ledger td:first-child{color:var(--muted)}
+.ledger td.r{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ledger tr.tot td{font-weight:700;color:var(--ink);border-bottom:0}
+.delta-up{color:var(--bad)} .delta-down{color:var(--good)}
+.checks{display:grid;gap:5px;margin:0;padding:0;list-style:none;font-size:13.5px}
+.checks li{display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start}
+.checks .i{font-weight:800;text-align:center}
+.checks .ok .i{color:var(--good)} .checks .warn .i{color:var(--warn)} .checks .bad .i{color:var(--bad)} .checks .info .i{color:var(--muted)}
+.checks .bad{color:var(--bad)}
+.notes{padding:12px 14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+.saved{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:8px}
+.saved h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.saved-list{display:grid;gap:6px}
+.saved-item{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--board2);flex-wrap:wrap}
+.saved-item span{min-width:0;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--board);padding:8px 14px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.toast.on{opacity:1}
+.foot{font-size:12.5px;color:var(--muted);display:grid;gap:6px}
+.foot p{margin:0}
+textarea.copybox{width:100%;min-height:120px;border:1px solid var(--line);border-radius:8px;background:var(--board2);padding:8px;font-family:var(--f-num);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+.lnav{position:relative;z-index:5;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--board) 92%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.lnav-in{max-width:1240px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:18px;min-height:48px}
+.lnav-brand{font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);text-decoration:none;white-space:nowrap}
+.lnav-links{display:flex;gap:2px;overflow-x:auto;margin-left:auto;scrollbar-width:none}
+.lnav-links a,.lnav-links span{font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.08em;padding:13px 10px 11px;text-decoration:none;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.lnav-links a:hover{color:var(--ink)}
+.lnav-links a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--orange)}
+.lnav-links span{opacity:.5;cursor:default}
+.lnav-links small{font-family:var(--f-body);font-weight:600;font-size:10px;letter-spacing:.04em;margin-left:4px;text-transform:uppercase}
+@media (max-width:420px){.lnav-links span{display:none}.lnav-brand{font-size:15px}.lnav-links a,.lnav-links span{padding-inline:7px}.lnav-links small{display:none}}
+
+
+.team,.tray,.team-head,.head-info{grid-template-columns:minmax(0,1fr)}
+@media (max-width:480px){.head-body{grid-template-columns:104px minmax(0,1fr);gap:10px}.stat .v{font-size:13.5px}.stat .k{font-size:10px;letter-spacing:.05em}.tab{font-size:13px;padding-inline:6px}.tab .c{display:none}.filters .chip{padding-inline:7px}.pname{white-space:normal}.stat .tw{display:none}.stat .v{overflow:hidden;text-overflow:ellipsis}.stat{padding:5px 7px}}
+</style>
+</head>
+<body>
+<nav class="lnav" aria-label="Leagues"><div class="lnav-in"><a class="lnav-brand" href="/">Trade Machine</a><div class="lnav-links"><a href="/nhl/">NHL</a><a href="/nba/" aria-current="page">NBA</a><span title="Coming soon">NFL<small>soon</small></span><span title="Coming soon">MLB<small>soon</small></span></div></div></nav>
+<div class="wm wm-a" id="wm-a" aria-hidden="true"><span></span></div>
+<div class="wm wm-b" id="wm-b" aria-hidden="true"><span></span></div>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div style="display:grid;gap:6px;min-width:0">
+        <h1>NBA Trade <span>Machine</span></h1>
+        <p class="sub">Build a trade between any two teams and check it against the 2026–27 cap, tax line and aprons. Click a player or pick to move him, then read each team's verdict below.</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btn-copy" type="button">Copy summary</button>
+        <button class="btn" id="btn-save" type="button">Save trade</button>
+        <button class="btn" id="btn-reset" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="facts">
+      <span class="fact">Salary cap <b>$164.961M</b></span>
+      <span class="fact">Tax line <b>$200.428M</b></span>
+      <span class="fact">1st apron <b>$209.015M</b></span>
+      <span class="fact">2nd apron <b>$221.686M</b></span>
+      <span class="fact">Roster <b>15</b> + 3 two-way</span>
+      <span class="fact">Contracts <b>Oct 22, 2026</b></span>
+    </div>
+  </header>
+
+  <div class="boards">
+    <section class="team" id="team-a" aria-label="Team A"></section>
+    <section class="team" id="team-b" aria-label="Team B"></section>
+  </div>
+
+  <section class="tray" aria-label="Trade">
+    <div class="scoreboard" id="scoreboard">
+      <div class="sb-team" id="sb-a"></div>
+      <div class="sb-mid"><h2>The Trade</h2><span class="ledbar" aria-hidden="true"></span><span id="verdict" class="verdict" role="status">Add players or picks</span></div>
+      <div class="sb-team" id="sb-b"></div>
+    </div>
+    <div class="scout" id="scout" hidden>
+      <div class="scout-head">
+        <div style="display:grid;gap:2px;min-width:0"><h3>Scout's Take</h3><span class="scout-note">An AI opinion on who wins the deal. For fun, not official analysis.</span></div>
+        <button class="btn primary" id="btn-scout" type="button">Get the scouting report</button>
+      </div>
+      <div class="scout-body" id="scout-body" aria-live="polite"></div>
+    </div>
+    <div class="sides">
+      <div class="side" id="side-a"></div>
+      <div class="side" id="side-b"></div>
+    </div>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <section class="saved" id="saved" hidden>
+    <h2>My Trades</h2>
+    <div class="saved-list" id="saved-list"></div>
+  </section>
+
+  <footer class="foot">
+    <p>Contracts, cap and apron totals, options, trade-restriction dates and draft picks (2027–2033, with protections) from Spotrac as of Oct 22, 2026; jersey numbers from ESPN. Team salary counts dead money; apron figures also count unlikely incentives, as the CBA requires. Cap holds count only toward cap room.</p>
+    <p>Checks: salary matching (200% + $250K up to $9.1M out, + $9.1M up to $35.2M, 125% + $250K above; 100% for teams over the first apron after the trade), cap-room absorption, first- and second-apron hard caps, the second-apron ban on combining salaries, 15-man rosters and three two-way slots, and recently signed players who can't be traded yet. Not modeled: trade exceptions, cash, base-year compensation, the Stepien rule and the 30-day draftee rule.</p>
+    <p>Fan-made and unofficial. Not affiliated with the NBA or any team.</p>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="application/json" id="nbadata">{"BOS":{"name":"Boston Celtics","color":"#008348","capTotal":207991480,"apron":198722406,"tax":198722406,"hard":"first","players":[["Jayson Tatum","PF",28,"0",58456566,58456566,0,4,"UFA","P3","","","DVET-EXT","62786682,67116798,71446914",0],["Paul George","SG",36,"13",54126380,54126380,0,2,"UFA","P1","","","FA","56586670",0],["Derrick White","PG",32,"9",30348000,28458000,0,3,"UFA","P2","","","VET-EXT","32596000,34844000",0],["Mitchell Robinson","C",28,"4",15044000,15044000,0,3,"UFA","P2","12/15/2026","","FA","15796200,16548400",0],["Sam Hauser","SF",29,"30",10848215,10848215,0,3,"UFA","","","","VET-EXT","11651785,12455356",0],["Payton Pritchard","PG",29,"11",7767857,7767857,0,4,"UFA","M3","04/16/2027","","RK-EXT","8303571,21228200,22926456",0],["Ron Harper Jr.","SG",26,"8",3150752,3150752,0,4,"UFA","N2,T3","01/15/2027","","FA","3308290,3465828,3779359",0],["Chris Cenac Jr.","PF",20,"12",2988120,2988120,0,4,"RFA","T3","","","RK-1ST","3137640,3287400,5930470",0],["Hugo Gonzalez","SF",20,"28",2923560,2923560,0,3,"RFA","T1,T2","","","RK-1ST","3062640,5528065",0],["Luka Garza","C",28,"52",2801346,2801346,0,1,"UFA","","","","FA","",0],["Baylor Scheierman","SG",26,"55",2744040,2744040,0,2,"RFA","T1","","","RK-1ST","4952993",0],["Neemias Queta","C",27,"88",2667944,2667944,0,5,"UFA","","01/06/2027","","FA","12500000,13500000,14500000,15500000",0],["Mike Conley","PG",39,"45",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Jordan Walsh","SF",22,"27",2406205,2406205,0,4,"UFA","T3","07/01/2027","","RK-2ND","5000000,5250000,5500000",0],["Devin Carter","PG",24,"99",0,0,1,1,"","","11/16/2026","","TWO-WAY","",0],["Dillon Mitchell","F",23,"20",0,0,1,1,"","","","","TWO-WAY","",0],["Amari Williams","C",25,"77",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"BOS",0,"",0],[2028,1,"BOS",1,"If 1 \u00b7 Or swap 2-30 with SAS (via SAS swap for BOS)",0],[2028,1,"LAC",0,"(via PHI)",0],[2028,1,"SAS",1,"Or swap with BOS 2-30 (via SAS swap for BOS)",0],[2030,1,"BOS",0,"",0],[2031,1,"BOS",0,"",0],[2031,1,"PHI",0,"",0],[2032,1,"BOS",0,"",1],[2033,1,"BOS",0,"",0],[2028,2,"MIL",1,"Most favorable of GSW, MIL and OKC (via BKN to HOU to OKC to PHI)",0],[2030,2,"CHA",1,"If 30-55 \u00b7 If 56-60",0],[2030,2,"WAS",1,"Most favorable of PHX, POR and WAS then others to PHI and WAS (via PHI)",0],[2031,2,"BOS",1,"Less favorable of BOS and CLE then other to UTA (via CLE to ATL to BOS)",0],[2031,2,"HOU",1,"Least favorable of HOU 31-55 and ATL (via ATL swap for HOU) \u00b7 If 56-60",0],[2032,2,"BOS",0,"",0],[2033,2,"BOS",0,"",0]]},"ATL":{"name":"Atlanta Hawks","color":"#c8102e","capTotal":230052891,"apron":199865774,"tax":198669512,"hard":"first","players":[["Jalen Johnson","SF",25,"1",30000000,30000000,0,4,"UFA","","","","RK-EXT","30000000,30000000,30000000",0],["Dyson Daniels","SG",23,"5",25000000,25000000,0,4,"UFA","","","","RK-EXT","25000000,25000000,25000000",0],["C.J. McCollum","PG",35,"3",21000000,21000000,0,1,"UFA","","","","VET-EXT","",0],["Luguentz Dort","SG",27,"0",17722222,17722222,0,1,"UFA","","","","FA","",1000000],["Onyeka Okongwu","C",26,"17",16120000,16120000,0,2,"UFA","","","","RK-EXT","16880000",0],["Nickeil Alexander-Walker","SG",28,"7",14403710,14403710,0,3,"UFA","P2","","","S&T","15161800,15919890",0],["Dorian Finney-Smith","PF",33,"8",14196974,13335000,0,3,"UFA","N1,P2","11/27/2026","","FA","13335000,13335000",0],["Jock Landale","C",31,"31",14100000,14100000,0,1,"UFA","","01/15/2027","","FA","",0],["Corey Kispert","SF",27,"24",13975000,13975000,0,3,"UFA","T2","","","RK-EXT","13025000,13025000",0],["Aaron Wiggins","SG",28,"2",9028038,8831776,0,3,"UFA","T2","","","FA","8168226,8168226",196262],["Kingston Flemings","PG",20,"4",7348680,7348680,0,4,"RFA","T2,T3","","","RK-1ST","7716120,8083680,10282441",0],["Zuby Ejiofor","PF",22,"20",3453360,3453360,0,4,"RFA","T2,T3","","","RK-1ST","3626160,3798360,6445818",0],["Asa Newell","PF",21,"14",3399480,3399480,0,3,"RFA","T1,T2","","","RK-1ST","3560880,6042814",0],["Mouhamed Gueye","PF",24,"18",2406205,2406205,0,1,"UFA","","","","RK-2ND","",0],["Henri Veesaar","C",22,"13",1357763,1357763,0,4,"UFA","T3","","","RK-2ND","2294370,2694363,2918152",0],["RayJ Dennis","PG",25,"10",0,0,1,1,"","","","","TWO-WAY","",0],["Keshon Gilbert","G",23,"00",0,0,1,1,"","","","","TWO-WAY","",0],["Jalen Wilson","SF",26,"22",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Devin Carter",5158080]],"picks":[[2027,1,"MIL",1,"Least favorable of MIL and NOP then other to NOP (via NOP)",0],[2028,1,"ATL",1,"More favorable of (i) ATL and less favorable (ii) CLE and UTA then other to CLE (via ATL swap for CLE or UTA)",0],[2029,1,"ATL",0,"",0],[2030,1,"ATL",0,"",0],[2031,1,"ATL",0,"",0],[2032,1,"ATL",0,"",0],[2033,1,"ATL",0,"",0],[2027,2,"ATL",0,"(via BOS to MEM to POR)",0],[2029,2,"CLE",0,"",0],[2030,2,"NYK",0,"(via POR)",0],[2032,2,"ATL",1,"Least favorable of ATL and LAL then other to OKC (via ATL)",0],[2033,2,"ATL",0,"",0],[2033,2,"SAC",0,"",0]]},"BKN":{"name":"Brooklyn Nets","color":"#000000","capTotal":160056358,"apron":160056358,"tax":160056358,"hard":"","players":[["Michael Porter Jr.","SF",28,"17",40806150,40806150,0,1,"UFA","","","","DRK-EXT","",0],["Julius Randle","PF",32,"30",33333334,33333334,0,2,"UFA","P1","","","FA","35802468",0],["Terance Mann","SG",30,"14",15500000,15500000,0,2,"UFA","","","","VET-EXT","16000000",0],["Day'Ron Sharpe","C",25,"20",10000000,10000000,0,2,"UFA","T1","12/15/2026","","FA","10000000",0],["Keon Ellis","SG",27,"1",9000000,9000000,0,2,"UFA","M1","12/15/2026","","FA","9000000",0],["Moritz Wagner","C",29,"13",9000000,9000000,0,2,"UFA","M1","12/15/2026","","FA","9450000",0],["Mikel Brown Jr.","SG",20,"0",8787000,8787000,0,4,"RFA","T2,T3","","","RK-1ST","9226440,9666000,12256488",0],["Egor Demin","PG",20,"8",7233720,7233720,0,3,"RFA","T1,T2","","","RK-1ST","7578240,9639522",0],["Noah Clowney","PF",22,"21",5414034,5414034,0,1,"RFA","","","","RK-1ST","",0],["Josh Minott","SF",24,"00",4500000,4500000,0,2,"UFA","T1","01/15/2027","","FA","4500000",0],["Nolan Traore","PG",20,"10",4002000,4002000,0,3,"RFA","T1,T2","","","RK-1ST","4193040,6457282",0],["Drake Powell","SG",21,"4",3540600,3540600,0,3,"RFA","T1,T2","","","RK-1ST","3709320,6101832",0],["Ben Saraf","PG",20,"77",3028560,3028560,0,3,"RFA","T1","","","RK-1ST","3172920,5720776",0],["Joshua Jefferson","PF",23,"9",2969520,2969520,0,4,"RFA","T2,T3","","","RK-1ST","3118560,3266880,5896718",0],["Danny Wolf","PF",22,"2",2941440,2941440,0,3,"RFA","T1,T2","","","RK-1ST","3081840,5559640",0],["Tyler Bilodeau","F",22,"34",0,0,1,1,"","","","","TWO-WAY","",0],["Chaney Johnson","F",24,"31",0,0,1,1,"","","","","TWO-WAY","",0],["Grant Nelson","F",24,"16",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"BKN",1,"Or swap with HOU (via HOU swap for BKN)",0],[2027,1,"HOU",1,"Or swap with BKN (via HOU swap for BKN)",0],[2027,1,"NYK",0,"",0],[2028,1,"BKN",1,"Two most favorable of BKN, PHI 9-30 and PHX (via BKN swap for PHX) Or swap with NYK",0],[2028,1,"NYK",1,"Or swap with BKN (via BKN swap for NYK)",0],[2028,1,"PHI",1,"If 1-8 or LAC or BOS (via BOS swap for LAC or PHI 1-8) \u00b7 If 9-30",0],[2029,1,"BKN",0,"",0],[2029,1,"HOU",1,"Least favorable of DAL HOU and PHX then others to HOU",0],[2029,1,"NYK",0,"",0],[2030,1,"BKN",0,"",0],[2031,1,"BKN",0,"",0],[2031,1,"NYK",0,"",0],[2032,1,"BKN",0,"",0],[2032,1,"DEN",0,"",0],[2033,1,"BKN",0,"",0],[2028,2,"ATL",0,"(via GSW)",0],[2028,2,"BKN",0,"",0],[2028,2,"MEM",0,"(via PHX)",0],[2028,2,"PHI",1,"PHI pick if PHI conveys second 1st to BKN by 2028; BKN pick if PHI does not convey second 1st to BKN by 2028",0],[2029,2,"BKN",0,"",0],[2029,2,"DAL",0,"",0],[2029,2,"GSW",0,"",0],[2029,2,"MEM",0,"(via PHX)",0],[2030,2,"BOS",0,"(via HOU)",0],[2030,2,"BKN",0,"",0],[2030,2,"DAL",0,"(via BOS to MEM)",0],[2030,2,"LAL",0,"",0],[2031,2,"BKN",0,"",0],[2031,2,"LAL",0,"",0],[2032,2,"BKN",0,"",0],[2032,2,"DEN",0,"",0],[2032,2,"MIA",0,"",0],[2032,2,"TOR",0,"",0],[2033,2,"BKN",0,"",0]]},"CHA":{"name":"Charlotte Hornets","color":"#008ca8","capTotal":173181531,"apron":171530614,"tax":171030614,"hard":"first","players":[["Coby White","PG",26,"3",26811593,26811593,0,3,"UFA","","01/15/2027","","FA","24666667,22521740",0],["Naz Reid","PF",27,"0",23275862,23275862,0,4,"UFA","P3","","","FA","25000000,26724138,28448276",0],["Grayson Allen","SG",31,"8",18125000,18125000,0,2,"UFA","P1","","","VET-EXT","19375000",0],["Brandon Miller","SF",24,"24",15104626,15104626,0,6,"UFA","","07/01/2027","","RK-1ST","36034483,38917241,41800000,44682759,47565517",0],["Dennis Schr\u00f6der","PG",33,"17",14809200,14809200,0,2,"UFA","N1","","","FA","15514400",0],["Grant Williams","PF",28,"2",14265750,14265750,0,1,"UFA","","","","S&T","",0],["Royce O'Neale","SF",33,"00",10875000,10875000,0,2,"UFA","","","","FA","11625000",500000],["Kon Knueppel","SF",21,"7",10516560,10516560,0,3,"RFA","T1,T2","","","RK-1ST","11017560,13937214",0],["Tidjane Salaun","PF",21,"31",8237880,8237880,0,2,"RFA","T1","","","RK-1ST","10445633",0],["Hannes Steinbach","C",20,"22",5227200,5227200,0,4,"RFA","T2,T3","","","RK-1ST","5488560,5750160,8515987",0],["Christian Anderson","PG",20,"5",4257480,4257480,0,4,"RFA","T2","","","RK-1ST","4470000,4683120,7202639",0],["Liam McNeeley","SF",21,"33",2902080,2902080,0,3,"RFA","T1,T2","","","RK-1ST","3040320,5487778",0],["Moussa Diabate","C",25,"14",2461462,2461462,0,1,"UFA","","","","ROS","",0],["Sion James","SG",24,"4",2411090,2411090,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["Ryan Kalkbrenner","C",25,"11",2411090,2411090,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["Michael Ajayi","F",23,"",0,0,1,1,"","","","","TWO-WAY","",0],["Kylan Boswell","G",21,"18",0,0,1,1,"","","","","TWO-WAY","",0],["P.J. Hall","PF",24,"16",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Rob Dillingham",6889320],["Ryan Nembhard",2150917]],"picks":[[2027,1,"CHA",0,"",0],[2027,1,"DAL",1,"If 1-2 \u00b7 If 3-30",0],[2027,1,"MIA",1,"If 1-14 \u00b7 If 15-30",0],[2028,1,"CHA",1,"Or swap for MIN (via CHA swap for MIN)",0],[2028,1,"MIA",1,"If MIA does not convey 1st to CHA in 2027",0],[2028,1,"MIN",1,"Or swap with CHA (via CHA swap for MIN)",0],[2029,1,"CLE",1,"Least favorable of CLE, MIN 6-30 and UTA to PHX then others to UTA (via UTA to PHX)",0],[2030,1,"CHA",1,"Or swap for least favorable of DAL, MIN 2-30 and SAS (via CHA swap for MIN)",0],[2031,1,"CHA",0,"",0],[2032,1,"CHA",0,"",0],[2033,1,"CHA",0,"",0],[2033,1,"MIN",0,"",0],[2033,1,"PHX",0,"",0],[2027,2,"MEM",0,"(via LAC to HOU)",0],[2027,2,"NOP",1,"More favorable of NOP and POR to CHA then other to POR (via POR)",0],[2027,2,"PHI",1,"(via LAC) Second most favorable of (i) PHL, (ii) more favorable of GOS and PHX (via WAS) and (iii) most favorable of OKC, HOU, IND and MIA (via HOU to DET to OKC; via IND and MIA to OKC)",0],[2028,2,"CHA",1,"More favorable of CHA and LAC then other to DET (via LAC to CHA to DAL)",0],[2028,2,"HOU",0,"(via HOU to ATL to HOU)",0],[2028,2,"ORL",0,"",0],[2029,2,"ATL",1,"More favorable of ATL and MIA the other to OKC (via OKC)",0],[2029,2,"CHA",0,"",0],[2029,2,"DEN",0,"If DEN conveys 1st to OKC by 2029",0],[2029,2,"MIN",0,"If MIN conveys 1st to UTA in 2029 \u00b7 MIN pick if MIN conveys 1st to UTA in 2029; UTA pick if MIN does not convey 1st to UTA in 2029 or CHA if does not convery",0],[2030,2,"CHA",1,"If 30-55 \u00b7 If 56-60",0],[2030,2,"UTA",1,"More favorable of LAC and UTA (via UTA)",0],[2031,2,"CHA",0,"",0],[2031,2,"MIL",0,"",0],[2031,2,"PHX",0,"",0],[2032,2,"CHA",0,"",0],[2032,2,"MIL",0,"",0],[2032,2,"MIN",0,"",0],[2033,2,"CHA",0,"",0],[2033,2,"HOU",0,"",0],[2033,2,"MIN",0,"",0]]},"CHI":{"name":"Chicago Bulls","color":"#ce1141","capTotal":165770083,"apron":168085200,"tax":165770083,"hard":"first","players":[["Josh Giddey","PG",24,"3",25000000,25000000,0,3,"UFA","","","","FA","25000000,25000000",0],["Nicolas Claxton","C",27,"9",23320738,23147727,0,2,"UFA","","","","FA","21099720",542896],["Norman Powell","SG",33,"24",21500000,21500000,0,2,"UFA","T1","12/15/2026","","FA","22575000",0],["Patrick Williams","PF",25,"44",18000000,18000000,0,3,"UFA","P2","","","FA","18000000,18000000",0],["Isaac Okoro","SG",26,"35",11814814,11814814,0,1,"UFA","","","","FA","",1772221],["Caleb Wilson","PF",20,"8",10683720,10683720,0,4,"RFA","T2,T3","","","RK-1ST","11217960,11752320,14866685",0],["Buddy Hield","SG",34,"7",9658536,9658536,0,2,"UFA","P1","11/27/2026","","S&T","10097560",0],["Jalen Smith","C",26,"25",9428571,9428571,0,1,"UFA","","","","FA","",0],["Zach Collins","C",29,"12",8500000,8500000,0,2,"UFA","T1","","","VET-EXT","8500000",0],["Tre Jones","PG",27,"30",8000000,8000000,0,2,"UFA","T1","","","FA","8000000",0],["Matas Buzelis","SF",22,"14",5715360,5715360,0,2,"RFA","","","","RK-1ST","7584283",0],["Noa Essengue","PF",20,"2",5701200,5701200,0,3,"RFA","T2","","","RK-1ST","5972760,8230464",0],["Dailyn Swain","SF",21,"5",4965480,4965480,0,4,"RFA","T2,T3","","","RK-1ST","5213760,5461920,8373124",0],["Leonard Miller","SF",23,"11",2406205,2406205,0,1,"UFA","","","","RK-2ND","",0],["Tobe Awaka","PF",23,"19",0,0,1,1,"","","","","TWO-WAY","",0],["Jordan Hawkins","SG",24,"15",0,0,1,1,"","","01/05/2027","","TWO-WAY","",0],["Jaylin Sellers","G",23,"22",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Kam Jones",1075459]],"picks":[[2027,1,"CHI",0,"",0],[2028,1,"CHI",0,"",0],[2029,1,"CHI",0,"",0],[2030,1,"CHI",0,"",0],[2031,1,"CHI",0,"",0],[2032,1,"CHI",0,"",0],[2033,1,"CHI",0,"",0],[2027,2,"CLE",0,"(via ATL to MIN)",0],[2028,2,"CHI",1,"Most favorable of CHI, IND and PHX then others to IND and NYK",0],[2028,2,"POR",1,"(via CHI to SAC to MEM)",0],[2029,2,"CHI",0,"",0],[2029,2,"NYK",0,"(via NYK to DET to SAC)",0],[2030,2,"CHI",1,"More favorable of CHI and IND then other to IND",0],[2030,2,"IND",1,"Less favorable of CHI and IND then other to CHI",0],[2031,2,"CHI",0,"",0],[2031,2,"DEN",0,"(via PHX to CHA)",0],[2031,2,"MIN",1,"Most favorable of GSW and MIN then other to DET (via MIN swap for GSW (via MIN))",0],[2031,2,"NYK",0,"(via DET to CHA)",0],[2032,2,"CHI",0,"",0],[2032,2,"HOU",1,"More favorable of HOU and PHX then other to PHX (via PHX to MIN)",0],[2033,2,"CHI",0,"",0]]},"CLE":{"name":"Cleveland Cavaliers","color":"#860038","capTotal":226115902,"apron":208969955,"tax":208969955,"hard":"first","players":[["Donovan Mitchell","SG",30,"45",50105628,50105628,0,5,"UFA","P4","","","VET-EXT","61600000,66528000,71456000,76384000",0],["Evan Mobley","PF",25,"4",50105628,50105628,0,4,"UFA","","","","DRK-EXT","53817156,57528684,61240212",0],["James Harden","PG",37,"1",30647619,30647619,0,3,"UFA","P2","12/15/2026","","FA","32180000,33712381",0],["Jarrett Allen","C",28,"31",28000000,28000000,0,3,"UFA","","","","VET-EXT","30240000,32480000",0],["Peyton Watson","SF",24,"8",20465116,20465116,0,4,"UFA","P3","01/15/2027","","S&T","21488372,22511628,23534884",0],["Sam Merrill","SG",30,"5",9160715,9160715,0,3,"UFA","","","","FA","9839285,10517856",0],["Jaylon Tyson","SG",24,"20",3658560,3658560,0,2,"RFA","","","","RK-1ST","5641500",0],["Thomas Bryant","C",29,"3",2449421,3524115,0,1,"UFA","","12/15/2026","","FA","",0],["Mario Hezonja","SF",31,"33",2449421,2449421,0,1,"UFA","N0","12/15/2026","","FA","",0],["Nae'qwan Tomlin","PF",26,"35",2411090,2411090,0,1,"RFA","","","","ROS","",0],["Craig Porter Jr.","PG",26,"9",2406205,2406205,0,1,"UFA","","","","ROS","",0],["Tyrese Proctor","PG",22,"24",2150917,2150917,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["Khalifa Diop","C",25,"18",1357763,1357763,0,4,"UFA","T3","12/15/2026","","RK-2ND","2294370,2694363,2918152",0],["Meleek Thomas","SG",20,"15",1357763,1357763,0,4,"UFA","T3","12/15/2026","","RK-2ND","2294370,2694363,2918152",0],["Tristan Enaruna","PF",25,"21",0,0,1,1,"","","","","TWO-WAY","",0],["Riley Minix","SF",26,"12",0,0,1,1,"","","","","TWO-WAY","",0],["Ernest Udeh Jr.","C",23,"39",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Cam Whitmore",1819437],["Ricky Rubio",424672]],"picks":[[2028,1,"CLE",1,"Least favorable of CLE, ATL and UTA (via UTH swap for CLE; via ATL swap for CLE or UTH)",0],[2030,1,"CLE",0,"",0],[2032,1,"CLE",0,"",0],[2033,1,"CLE",0,"",1],[2033,2,"CLE",0,"",0]]},"DAL":{"name":"Dallas Mavericks","color":"#0064b1","capTotal":205586952,"apron":190674985,"tax":189330400,"hard":"first","players":[["Kyrie Irving","PG",34,"11",39491282,39491282,0,2,"UFA","P1","","","FA","42416562",0],["PJ Washington","PF",28,"25",19813044,19813044,0,4,"UFA","","","","VET-EXT","21398087,22983132,24568176",0],["Daniel Gafford","C",28,"21",17263584,17263584,0,3,"UFA","","","","VET-EXT","18126763,18989942",0],["Santi Aldama","PF",26,"34",17007043,17007043,0,2,"UFA","T1","","","FA","17007043",0],["Cooper Flagg","SF",20,"32",14517480,14517480,0,3,"RFA","T2","","","RK-1ST","15208680,19178146",0],["Zaccharie Risacher","SF",21,"10",13826040,13826040,0,2,"RFA","T1","","","RK-1ST","17434637",0],["Caleb Martin","SF",31,"16",10001494,8963901,0,2,"UFA","P1","","","FA","9371351",1344585],["Naji Marshall","SF",29,"3",9428571,9428571,0,4,"UFA","","02/02/2027","","FA","18195600,17323584,16680816",0],["Max Christie","SG",23,"0",8285714,8285714,0,2,"UFA","P1","","","FA","8857143",0],["Dereck Lively II","C",22,"2",7239131,7239131,0,1,"RFA","","","","RK-1ST","",0],["Morez Johnson Jr.","C",21,"14",6754800,6754800,0,4,"RFA","T2,T3","","","RK-1ST","7093080,7430640,9466636",0],["Marcus Sasser","PG",26,"8",5198983,5198983,0,1,"RFA","","","","RK-1ST","",0],["Sergio de Larrea","PG",21,"55",3182280,3182280,0,4,"RFA","T2,T3","","","RK-1ST","3341280,3500880,6305086",0],["Tarik Biberovic","SG",26,"13",3000000,3000000,0,2,"RFA","T1","12/15/2026","","RK","3000000",0],["Moussa Cisse","C",24,"30",2185116,2185116,0,2,"RFA","N1","12/15/2026","","FA","2571895",0],["Walter Clayton Jr.","PG",23,"1",0,0,1,1,"","","11/20/2026","","TWO-WAY","",0],["Jett Howard","SG",23,"9",0,0,1,1,"","","","","TWO-WAY","",0],["Tobi Lawal","F",23,"33",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Klay Thompson",7660317],["JaVale McGee",2208856],["Olivier-Maxence Prosper",1002360],["Dwight Powell",1000000]],"picks":[[2027,1,"DAL",1,"If 1-2 \u00b7 If 3-30",0],[2028,1,"DAL",1,"Or swap with OKC (via OKC swap for DAL)",0],[2028,1,"OKC",1,"Or swap with DAL (via OKC swap for DAL)",0],[2029,1,"LAL",0,"",0],[2030,1,"DAL",1,"Least favorable of DAL and SAS (via SAN swap for DAL)",0],[2031,1,"DAL",0,"",0],[2032,1,"DAL",0,"",0],[2033,1,"DAL",0,"",0],[2029,2,"HOU",0,"(via OKC to WAS)",0]]},"DEN":{"name":"Denver Nuggets","color":"#0e2240","capTotal":235008821,"apron":224836337,"tax":219218837,"hard":"","players":[["Nikola Jokic","C",31,"15",59033114,59033114,0,2,"UFA","P1","","","DVET-EXT","62841702",0],["Jamal Murray","PG",29,"27",50105628,50105628,0,3,"UFA","","","","VET-EXT","53817156,57528684",0],["Aaron Gordon","PF",31,"32",31978037,31978037,0,3,"UFA","P2","","","VET-EXT","34536280,37094523",1680000],["Cameron Johnson","SF",30,"23",23062500,22500000,0,1,"UFA","","","","FA","",3937500],["Christian Braun","SG",25,"0",21551726,21551726,0,5,"UFA","","","","RK-EXT","23275863,25000000,26724137,28448274",0],["Zeke Nnaji","C",26,"22",7466667,7466667,0,2,"UFA","P1","","","RK-EXT","7466667",0],["Spencer Jones","PF",25,"21",6000000,6000000,0,2,"UFA","","01/15/2027","veto","FA","5750000",0],["Julian Strawther","SF",24,"1",4826931,4826931,0,1,"RFA","","","","RK-1ST","",0],["DaRon Holmes II","PF",24,"14",3372120,3372120,0,2,"RFA","T1","","","RK-1ST","5547138",0],["DeMar DeRozan","SF",37,"10",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Tyus Jones","PG",30,"5",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Marvin Bagley III","C",27,"3",2449421,3506659,0,1,"UFA","","12/15/2026","","FA","",0],["Alpha Diallo","SF",29,"11",1357763,1357763,0,1,"RFA","","12/15/2026","","FA","",0],["Trevon Brazile","PF",24,"7",1357763,1357763,0,4,"RFA","T3","12/15/2026","","RK-2ND","2294370,2694363,2918152",0],["Bryce Hopkins","F",25,"13",0,0,1,1,"","","","","TWO-WAY","",0],["Ryan Nembhard","PG",23,"9",0,0,1,1,"","","10/30/2026","","TWO-WAY","",0],["Cam Whitmore","SF",22,"00",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Jonas Valanciunas",666667]],"picks":[[2027,1,"DEN",1,"If 1-5 \u00b7 If 6-30",0],[2028,1,"DEN",1,"If 1-5 if not already settled with OKC \u00b7 If 6-30 if not already settled",0],[2029,1,"DEN",1,"If 1-5 if not already settled with OKC or 1-5 if DEN conveys 1st to OKC by 2027 \u00b7 If 6-30 if not already settled or 6-30 if DEN conveys 1st to OKC by 2027",0],[2030,1,"DEN",1,"If 1-5 if not already settled with OKC or 1-5 if DEN conveys 1st to OKC by 2028 \u00b7 If 6-30 if not already settled or 6-30 if DEN conveys 1st to OKC by 2028",0],[2031,1,"CLE",0,"",0],[2031,1,"DEN",0,"",0],[2033,1,"DEN",0,"",0],[2028,2,"DEN",1,"If 31-33 \u00b7 If 34-60 (via SAS to SAC)",0],[2028,2,"MIN",0,"(via SAS)",0],[2031,2,"SAC",0,"(via SAS)",0],[2032,2,"SAC",0,"(via CLE)",0],[2033,2,"DEN",0,"",0]]},"DET":{"name":"Detroit Pistons","color":"#1d428a","capTotal":204147599,"apron":194498178,"tax":194498178,"hard":"first","players":[["Cade Cunningham","PG",25,"2",50105628,50105628,0,4,"UFA","","","","DRK-EXT","53817156,57528684,61240212",0],["Jalen Duren","C",23,"0",40160643,40160643,0,5,"UFA","","","","FA","36947792,38955824,40963856,42971885",0],["John Collins","PF",29,"20",17000000,17000000,0,3,"UFA","N1,N2","12/15/2026","","S&T","17000000,17000000",0],["Duncan Robinson","SG",32,"55",15992957,2000000,0,2,"UFA","N0,N1","","","S&T","15151222",0],["Isaiah Joe","SG",27,"17",11323006,11323006,0,2,"UFA","T1","","","FA","11323006",0],["Ausar Thompson","SF",24,"9",11117925,11117925,0,6,"UFA","","07/01/2027","","RK-1ST","26724138,28862069,31000000,33137931,35275862",0],["Kevin Huerter","SG",28,"27",9507042,9507042,0,3,"UFA","T2","12/15/2026","","FA","8746479,8746479",0],["Ron Holland II","SF",21,"5",9069600,9069600,0,2,"RFA","","","","RK-1ST","11491183",0],["Paul Reed","C",27,"7",5602689,5602689,0,1,"UFA","","","","FA","",0],["Ebuka Okorie","PG",19,"23",4481280,4481280,0,4,"RFA","T2,T3","","","RK-1ST","4705440,4929360,7571497",0],["Daniss Jenkins","G",25,"24",4000000,4000000,0,1,"RFA","","","","ROS","",0],["Javonte Green","SG",33,"31",3943679,3943679,0,1,"UFA","","12/15/2026","","FA","",0],["Taurean Prince","PF",32,"12",3815861,3815861,0,1,"UFA","","","","FA","",0],["Tolu Smith III","F",26,"35",2411090,2411090,0,1,"RFA","","","","ROS","",0],["Chaz Lanier","SG",25,"8",2150917,2150917,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["Elijah Harkless","PG",26,"94",0,0,1,1,"","","","","TWO-WAY","",0],["Isaac Jones","C",26,"13",0,0,1,1,"","","","","TWO-WAY","",0],["Ugonna Onyenso","C",22,"34",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Gary Harris",3815861]],"picks":[[2027,1,"DET",0,"",0],[2028,1,"DET",0,"",0],[2029,1,"DET",0,"",0],[2030,1,"DET",0,"",0],[2031,1,"DET",0,"",0],[2032,1,"DET",0,"",0],[2033,1,"DET",0,"",0],[2027,2,"DET",0,"",0],[2028,2,"DET",1,"Least favorable of DET 31-55, CHA, LAC, MIA and NYK to UTA then others to DET \u00b7 If 56-60",0],[2028,2,"LAC",1,"Least favorable of CHA and LAC then other to CHA (via LAC to CHA to DAL)",0],[2028,2,"MIA",0,"If DAL conveys 1st to CHA in 2027(via SAS to DAL to DET) or to CHA if DAL does not convey 1st to CHA in 2027",0],[2029,2,"DET",1,"Two most favorable of DET, MIL and NYK then other to SAC (via MIL to BRK to DET; via NYK to DET)",0],[2029,2,"MIL",1,"Two most favorable of DET, MIL and NYK then other to SAC (via MIL to BRK to DET; via NYK to DET)",0],[2030,2,"DET",0,"",0],[2031,2,"DAL",0,"(via PHI)",0],[2031,2,"DET",0,"",0],[2031,2,"GSW",1,"Least favorable of GSW and MIN then other to MIN (via MIN swap for GSW (via GSW))",0],[2032,2,"DET",0,"(via MEM)",0],[2033,2,"DET",0,"",0]]},"GSW":{"name":"Golden State Warriors","color":"#fdb927","capTotal":254337411,"apron":221338432,"tax":220838432,"hard":"second","players":[["Stephen Curry","PG",38,"30",62587158,62587158,0,3,"UFA","P2","03/25/2027","","VET-EXT","55700000,60156000",0],["Jimmy Butler","SF",37,"10",56832773,56832773,0,1,"UFA","","","","VET-EXT","",0],["Draymond Green","PF",36,"23",27678571,27678571,0,1,"UFA","","12/15/2026","","FA","",0],["Kristaps Porzingis","C",31,"7",20000000,20000000,0,2,"UFA","P1","","","VET-EXT","20000000",0],["Moses Moody","SG",24,"4",12500000,12500000,0,2,"UFA","","","","RK-EXT","13425925",500000],["Al Horford","C",40,"20",6822000,6822000,0,2,"UFA","P1","12/15/2026","","FA","7163100",0],["Yaxel Lendeborg","SF",24,"1",6096240,6096240,0,4,"RFA","T2,T3","","","RK-1ST","6401280,6706200,8899128",0],["De'Anthony Melton","SG",28,"8",6064000,6064000,0,2,"UFA","P1","12/15/2026","","FA","6367200",0],["Brandin Podziemski","SG",23,"2",5679459,5679459,0,6,"UFA","M5","07/01/2027","","RK-1ST","18965518,20482759,22000000,23517241,25034483",0],["Gui Santos","SF",24,"15",4629630,4629630,0,3,"UFA","P2","","","VET-EXT","5000000,5370370",0],["Georges Niang","PF",33,"32",2449421,1838009,0,1,"UFA","N0","12/15/2026","","FA","",0],["Gary Payton II","PG",34,"0",2449421,3876529,0,1,"UFA","","12/15/2026","veto","FA","",0],["Charles Bassey","C",26,"28",2449421,1400000,0,1,"UFA","N0","12/15/2026","","FA","",0],["Brandon Williams","PG",27,"12",2449421,1400000,0,1,"UFA","N0","12/15/2026","","FA","",0],["Will Richard","G",24,"3",2150917,2150917,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["L.J. Cryer","PG",25,"18",0,0,1,1,"","","","","TWO-WAY","",0],["Graham Ike","F",24,"",0,0,1,1,"","","","","TWO-WAY","",0],["Malevy Leons","PF",27,"33",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"GSW",0,"",0],[2028,1,"GSW",0,"",0],[2029,1,"GSW",0,"",0],[2030,1,"GSW",1,"If 1-20 \u00b7 If 21-30 (via WAS to DAL)",0],[2031,1,"GSW",0,"",0],[2032,1,"GSW",0,"",0],[2033,1,"GSW",0,"",0],[2030,2,"GSW",1,"GSW pick if GSW conveys 1st to WAS in 2030; WAS pick if GSW does not convey 1st to WAS in 2030",0],[2032,2,"GSW",1,"If 31-50 \u00b7 If 51-60",0]]},"HOU":{"name":"Houston Rockets","color":"#ce0e2d","capTotal":212396723,"apron":200413923,"tax":200413923,"hard":"second","players":[["Kevin Durant","SF",38,"7",43902439,43902439,0,2,"UFA","P1","","","VET-EXT","46097561",0],["Alperen Sengun","C",24,"28",35642202,35642202,0,4,"UFA","P3","","","RK-EXT","37339450,39036697,39036697",0],["Fred VanVleet","PG",32,"5",25000000,25000000,0,1,"UFA","","","","FA","",0],["Jabari Smith Jr.","PF",23,"10",23643411,23643411,0,5,"UFA","","","","RK-EXT","21751940,23643411,25534883,27426355",0],["Tari Eason","PF",25,"17",14053356,14053356,0,5,"UFA","P4","01/15/2027","","FA","15177624,16301892,17426160,18550428",0],["Steven Adams","C",33,"12",13000000,13000000,0,2,"UFA","","","","VET-EXT","11869565",0],["Amen Thompson","PG",24,"1",12258609,12258609,0,6,"UFA","","","","RK-1ST","35862069,38731034,41600000,44468966,47337931",0],["Reed Sheppard","SG",22,"15",11108880,11108880,0,2,"RFA","T1","","","RK-1ST","14041625",0],["Clint Capela","C",32,"30",7035000,7035000,0,2,"UFA","","","","S&T","7370000",0],["Marcus Smart","PG",32,"36",6064000,6064000,0,2,"UFA","P1","12/15/2026","","FA","6367200",0],["Bogdan Bogdanovic","SG",34,"31",2449421,3524115,0,1,"UFA","","12/15/2026","","FA","",0],["Jae\u2019Sean Tate","SF",31,"8",2449421,1039669,0,1,"UFA","N0","12/15/2026","","FA","",0],["Isaiah Crawford","G",25,"27",2449421,1154325,0,4,"UFA","N0,N1,N2,T3","12/15/2026","","FA","2664401,2888193,3272766",0],["Bruce Thornton","PG",23,"2",1357763,1357763,0,4,"UFA","T3","","","RK-2ND","2294370,2694363,2918152",0],["Quadir Copeland","F",23,"25",0,0,1,1,"","","","","TWO-WAY","",0],["Julian Phillips","SF",23,"3",0,0,1,1,"","","11/18/2026","","TWO-WAY","",0],["Oscar Tshiebwe","PF",27,"9",0,0,1,1,"","","11/18/2026","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"BKN",1,"Or swap with HOU (via HOU swap for BKN)",0],[2027,1,"HOU",1,"Or swap with BKN (via HOU swap for BKN)",0],[2027,1,"PHX",0,"(via BKN)",0],[2028,1,"HOU",0,"",0],[2029,1,"DAL",1,"Two most favorable of BKN, DAL and PHX to HOU then other to BKN",0],[2029,1,"PHX",1,"Two most favorable of BKN, DAL and PHX to HOU then other to BKN",0],[2030,1,"HOU",0,"",0],[2031,1,"HOU",0,"",0],[2032,1,"HOU",0,"",0],[2033,1,"HOU",0,"",0],[2027,2,"POR",1,"If POR 56-60 then less favorable of NOP and POR 56-60 (via POR to BOS)",0],[2031,2,"HOU",1,"Least favorable of HOU 31-55 and ATL (via ATL swap for HOU) \u00b7 If 56-60",0]]},"IND":{"name":"Indiana Pacers","color":"#0c2340","capTotal":208485050,"apron":206779934,"tax":206299934,"hard":"first","players":[["Tyrese Haliburton","PG",26,"0",48924624,48924624,0,3,"UFA","","","","DRK-EXT","52298736,55672848",0],["Pascal Siakam","PF",32,"43",48924624,48924624,0,2,"UFA","","","","FA","52298736",0],["Ivica Zubac","C",29,"40",20342140,19550160,0,2,"UFA","","","","VET-EXT","21790300",0],["Andrew Nembhard","PG",27,"2",19550160,19550160,0,2,"UFA","","","","VET-EXT","20998320",0],["Obi Toppin","PF",28,"1",15000000,15000000,0,2,"UFA","","","","FA","16025000",480000],["T.J. McConnell","PG",34,"9",11000000,11000000,0,3,"UFA","N1,T2","","","VET-EXT","11800000,11800000",0],["Aaron Nesmith","SF",27,"23",11000000,11000000,0,3,"UFA","","","","RK-EXT","19418000,20971440",0],["Jarace Walker","SF",23,"5",8478542,8478542,0,1,"RFA","","","","RK-1ST","",0],["Kelly Oubre Jr.","SF",31,"10",8050000,8050000,0,2,"UFA","","12/15/2026","","FA","8450000",0],["Ben Sheppard","SG",25,"26",5031669,5031669,0,1,"RFA","","","","RK-1ST","",0],["Jay Huff","C",28,"32",2667944,379382,0,2,"UFA","N0,T1","","","","3005085",0],["Quenton Jackson","G",28,"29",2584539,2584539,0,2,"UFA","N1","","","ROS","2934742",0],["Larry Nance Jr.","PF",34,"22",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Johnny Furphy","SG",22,"12",2296271,2296271,0,2,"UFA","T1","","","RK-2ND","2486995",0],["Kobe Brown","PF",27,"24",0,0,1,1,"","","","","TWO-WAY","",0],["Jalen Slawson","PF",27,"18",0,0,1,1,"","","","","TWO-WAY","",0],["Braden Smith","PG",23,"3",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"IND",0,"",0],[2028,1,"IND",0,"",0],[2030,1,"IND",0,"",0],[2031,1,"IND",0,"",0],[2032,1,"IND",0,"",0],[2033,1,"IND",0,"",0],[2027,2,"UTA",0,"(via CLE) or to NOP if IND does not convey 1st to NOP by 2027",0],[2028,2,"IND",0,"Middle Pick of CHI, IND and PHX then others to CHI and NYK",0],[2029,2,"WAS",1,"More favorable of IND and WAS to IND then other to POR (via NYK)",0],[2031,2,"IND",1,"Least favorable of IND, MEM and MIA then others to MEM and WAS (via MIA swap for IND; via UTH to WAS; via MEM swap for IND or MIA)",0],[2032,2,"IND",0,"",0],[2033,2,"IND",0,"",0]]},"LAC":{"name":"LA Clippers","color":"#12173f","capTotal":200246116,"apron":183326726,"tax":183326726,"hard":"first","players":[["Darius Garland","PG",27,"10",42166510,42166510,0,2,"UFA","","","","DRK-EXT","44886930",0],["Brandon Ingram","SF",29,"7",40000000,40000000,0,2,"UFA","P1","11/14/2026","","VET-EXT","41904762",0],["Max Strus","SG",30,"31",16660836,16660836,0,1,"UFA","","","","S&T","",0],["Rui Hachimura","PF",28,"28",14000000,14000000,0,2,"UFA","T1","12/15/2026","","FA","14000000",0],["Derrick Jones Jr.","SF",29,"5",10476190,10476190,0,1,"UFA","","","","FA","",0],["Keaton Wagler","PG",19,"1",9674760,9674760,0,4,"RFA","T2,T3","","","RK-1ST","10158240,10641960,13483364",0],["Brook Lopez","C",38,"11",9187500,9187500,0,1,"UFA","","","","FA","",0],["Gradey Dick","SG",23,"9",7131511,7131511,0,1,"RFA","","11/14/2026","","RK-1ST","",0],["Isaiah Jackson","C",25,"23",7000000,7000000,0,2,"UFA","","","","FA","6400000",0],["Bradley Beal","SG",33,"3",6424800,6424800,0,2,"UFA","P1","12/15/2026","","FA","6746040",0],["Kris Dunn","PG",32,"8",5684800,5684800,0,1,"UFA","","","","S&T","",0],["Jordan Miller","SF",27,"22",5300000,5300000,0,3,"UFA","N1,T2","01/15/2027","","FA","5000000,5000000",0],["Yanic Konan Niederhauser","C",23,"14",2880960,2880960,0,3,"RFA","T1,T2","","","RK-1ST","3018480,5448356",0],["Kobe Sanders","G",24,"4",2622139,2622139,0,4,"UFA","N2,N3","01/15/2027","","FA","2753246,2884353,3019474",0],["Baba Miller","PF",22,"18",1705630,1705630,0,4,"UFA","T3","12/15/2026","","RK-2ND","2294370,2694363,2918152",0],["Cameron Christie","SG",21,"24",0,0,1,1,"","","11/16/2026","","TWO-WAY","",0],["Nick Martinelli","F",22,"12",0,0,1,1,"","","","","TWO-WAY","",0],["Jalen Pickett","PG",27,"21",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Johni Broome",2150917]],"picks":[[2027,1,"OKC",1,"Two most favorable of DEN 6-30, LAC and OKC (via OKC swap for LAC)",0],[2027,1,"TOR",1,"LAC right to swap",0],[2029,1,"IND",1,"FORFEIT",0],[2029,1,"LAC",1,"If 1-3 \u00b7 Or swap 4-30 with PHI (via PHI swap for LAC)",0],[2029,1,"PHI",1,"Or swap with LAC 4-30 (via PHI swap for LAC)",0],[2030,1,"LAC",1,"FORFEIT",0],[2031,1,"LAC",1,"FORFEIT",0],[2031,1,"TOR",0,"",0],[2032,1,"LAC",1,"FORFEIT",0],[2033,1,"LAC",1,"FORFEIT",0],[2033,1,"TOR",0,"",0],[2028,2,"DAL",0,"(via SAC to IND)",0],[2030,2,"TOR",0,"",0],[2031,2,"LAC",0,"",0],[2032,2,"LAC",0,"",0],[2033,2,"LAC",0,"",0],[2033,2,"TOR",0,"",0]]},"LAL":{"name":"Los Angeles Lakers","color":"#552583","capTotal":200897322,"apron":200897322,"tax":200897322,"hard":"first","players":[["Luka Doncic","PG",27,"77",49488300,49488300,0,3,"UFA","P2","","","VET-EXT","53447364,57406428",0],["Austin Reaves","SG",28,"15",41240250,41240250,0,4,"UFA","P3","01/15/2027","","FA","42954030,46253250,49552470",0],["Walker Kessler","C",25,"14",30108821,30108821,0,4,"UFA","P3","01/15/2027","","S&T","31614262,33119703,34625144",0],["Quentin Grimes","SG",26,"5",13953489,13953489,0,4,"UFA","P3","12/15/2026","","FA","14651163,15348837,16046511",0],["Sandro Mamukelashvili","C",27,"54",13000000,13000000,0,4,"UFA","P3","12/15/2026","","FA","12350000,13000000,13650000",0],["Jarred Vanderbilt","PF",27,"2",12428571,12428571,0,2,"UFA","P1","","","VET-EXT","13285714",0],["Collin Sexton","PG",28,"10",9366000,9366000,0,2,"UFA","P1","12/15/2026","","FA","9834300",0],["Jaden Hardy","SG",24,"7",6000000,6000000,0,2,"UFA","T1","","","VET-EXT","6000000",0],["Jake LaRavia","SF",25,"12",6000000,6000000,0,1,"UFA","","","","FA","",0],["Cameron Carr","SG",22,"43",3315360,3315360,0,4,"RFA","T2,T3","","","RK-1ST","3481080,3646800,6378253",0],["Kevon Looney","C",30,"55",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Matisse Thybulle","SG",29,"4",2449421,3286399,0,1,"UFA","","12/15/2026","","FA","",0],["Ziaire Williams","SF",25,"11",2449421,2845883,0,1,"UFA","","12/15/2026","","FA","",0],["Bronny James","PG",22,"9",2296271,2296271,0,2,"UFA","T1","","","RK-2ND","2486995",0],["Adou Thiero","SF",22,"1",2150917,2150917,0,2,"RFA","T1","","","RK-2ND","2525901",0],["Arthur Kaluma","F",24,"47",0,0,1,1,"","","","","TWO-WAY","",0],["Chris Manon","G",25,"30",0,0,1,1,"","","","","TWO-WAY","",0],["AK Okereke","F",23,"31",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Dalton Knecht",4201080]],"picks":[[2027,1,"LAL",1,"If 1-4 \u00b7 If 5-30 (via UTA)",0],[2028,1,"LAL",1,"Least favorable of LAL and more favorable or CLE and UTA then other to UTA (via UTA swap for CLE and LAL)",0],[2030,1,"LAL",1,"Or swap with UTA (via UTA swap for LAL)",0],[2030,1,"UTA",1,"Or swap for LAL (via UTA swap for LAL)",0],[2032,1,"LAL",0,"",0],[2031,2,"WAS",0,"",0],[2032,2,"WAS",0,"",0],[2033,2,"LAL",0,"",0]]},"MEM":{"name":"Memphis Grizzlies","color":"#5d76a9","capTotal":161113773,"apron":163723946,"tax":161373946,"hard":"first","players":[["Jerami Grant","SF",32,"3",34206898,34206898,0,2,"UFA","P1","","","FA","36413790",0],["Isaiah Stewart","C",25,"28",15000000,15000000,0,2,"UFA","T1","","","RK-EXT","15000000",1000000],["Cameron Boozer","PF",19,"27",11849760,11849760,0,4,"RFA","T2","","","RK-1ST","12441840,13034880,16476089",0],["Ty Jerome","PG",29,"2",9220050,9220050,0,2,"UFA","P1","","","FA","9659100",0],["Quinten Post","C",26,"41",9000000,9000000,0,3,"UFA","N1,T2","12/15/2026","","FA","8550000,8550000",1350000],["Taylor Hendricks","PF",23,"22",7805900,7805900,0,1,"UFA","","","","RK-1ST","",0],["Zach Edey","C",24,"14",6332760,6332760,0,2,"RFA","","","","RK-1ST","8067937",0],["Cedric Coward","SG",23,"23",6001080,6001080,0,3,"RFA","T2","","","RK-1ST","6286920,8342743",0],["Kris Murray","PF",26,"17",5315004,5315004,0,1,"RFA","","","","RK-1ST","",0],["Karim Lopez","PF",19,"35",3746760,3746760,0,4,"RFA","T2,T3","","","RK-1ST","3934320,4121760,6565964",0],["Olivier-Maxence Prosper","PF",24,"18",2497812,2497812,0,1,"UFA","","","","ROS","",0],["Scotty Pippen Jr.","PG",26,"1",2461462,2461462,0,2,"UFA","T1","","","","2789215",0],["Cam Spencer","SG",26,"24",2411090,2411090,0,3,"UFA","T2","","","FA","2616754,2830685",0],["G.G. Jackson","PF",22,"45",2406205,2406205,0,1,"UFA","","","","ROS","",0],["Jaylen Wells","SF",23,"0",2296271,2296271,0,2,"UFA","T1","","","RK-2ND","2486995",0],["Carson Cooper","C",22,"20",0,0,1,1,"","","","","TWO-WAY","",0],["Jahmai Mashack","F",24,"21",0,0,1,1,"","","","","TWO-WAY","",0],["Javon Small","G",24,"10",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Kentavious Caldwell-Pope",17744971],["Jordan Hawkins",6343013],["D'Angelo Russell",5969250],["Jr. Walter Clayton Jr.",4190520],["Cole Anthony",3700000],["Micah Peavy",2150917],["Mamadi Diakite",464050]],"picks":[[2027,1,"LAL",1,"If 1-4 \u00b7 If 5-30 (via UTA)",0],[2027,1,"MEM",0,"",0],[2027,1,"UTA",1,"Most favorable of CLE, MIN and UTA then others to PHX and UTA (via UTA)",0],[2028,1,"MEM",0,"",0],[2029,1,"MEM",1,"Or swap for ORL 3-30 (via MEM swap for ORL)",0],[2029,1,"ORL",1,"If 1-2 or swap 3-30 with MEM (via MEM swap for ORL",0],[2030,1,"GSW",1,"If 1-20 \u00b7 If 21-30 (via WAS to DAL)",0],[2030,1,"MEM",1,"More favorable of MEM and less favorable of PHX and WAS",0],[2030,1,"ORL",0,"",0],[2031,1,"MEM",0,"",0],[2031,1,"PHX",0,"(via UTA)",0],[2032,1,"MEM",0,"",0],[2033,1,"MEM",0,"",0],[2029,2,"ORL",1,"If ORL 1-2 in 2029 \u00b7 If ORL 3-30 in 2029",0],[2029,2,"POR",0,"(via PHI to IND)",0],[2030,2,"HOU",1,"Most favorable pick of DEN, HOU and MIA then others to OKC (via OKC)",0],[2030,2,"MEM",1,"31-50 \u00b7 51-60",0],[2031,2,"MEM",1,"Most favorable of MEM, IND and MIA then others to IND and UTA (via MIA swap for IND; via MEM swap for IND or MIA)",0],[2031,2,"TOR",0,"(via NOP)",0],[2032,2,"GSW",1,"If 31-50 \u00b7 If 51-60",0],[2032,2,"MEM",1,"Most favorable of MEM, PHI and UTA (via MEM swap for PHI or UTA)",0],[2032,2,"NOP",1,"MEM right to swap",0],[2032,2,"PHI",1,"Or MEM via MEM swap for PHI",0],[2033,2,"GSW",0,"",0],[2033,2,"MEM",0,"",0],[2033,2,"OKC",0,"",0]]},"MIA":{"name":"Miami Heat","color":"#98002e","capTotal":218443949,"apron":206189256,"tax":206189256,"hard":"first","players":[["Giannis Antetokounmpo","PF",32,"7",58456566,58456566,0,2,"UFA","P1","","","VET-EXT","62786682",0],["Bam Adebayo","C",29,"13",49488300,49488300,0,3,"UFA","P2","","","VET-EXT","53447364,57406428",0],["Andrew Wiggins","SF",31,"22",30169644,30169644,0,3,"UFA","P2","","","VET-EXT","16510000,17320356",0],["Nikola Jovic","SF",23,"5",16200000,16200000,0,4,"UFA","","","","RK-EXT","14904000,15096000,16200000",0],["Bobby Portis","PF",31,"95",14521414,14521414,0,2,"UFA","P1","","","FA","15597074",0],["Davion Mitchell","PG",28,"2",12400000,12400000,0,1,"UFA","","","","FA","",0],["Tim Hardaway Jr.","SG",34,"10",6065000,6065000,0,1,"UFA","","12/15/2026","","FA","",0],["Klay Thompson","SG",36,"11",5600000,5600000,0,2,"UFA","P1","12/15/2026","","FA","5880000",0],["Dru Smith","PG",29,"12",2584539,2584539,0,2,"UFA","T1","","","FA","2934742",0],["Nick Richards","C",29,"8",2449421,3066143,0,1,"UFA","","12/15/2026","","FA","",0],["Simone Fontecchio","SF",31,"0",2449421,2625627,0,1,"UFA","","12/15/2026","","FA","",0],["Pelle Larsson","SG",25,"9",2296271,2296271,0,5,"UFA","M4","07/01/2027","","RK-2ND","13500000,14580000,15660000,16260000",0],["Myron Gardner","SG",25,"15",2150917,250000,0,2,"RFA","N0,N1","","","ROS","2525901",0],["Ryan Conwell","SG",22,"4",1357763,1357763,0,3,"RFA","T2","12/15/2026","","RK-2ND","2294370,2694363",0],["Tre Donaldson","G",23,"24",0,0,1,1,"","","","","TWO-WAY","",0],["Vladislav Goldin","C",25,"50",0,0,1,1,"","","","","TWO-WAY","",0],["Keshad Johnson","PF",25,"16",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"MIA",1,"If 1-14 \u00b7 If 15-30",0],[2028,1,"MIA",1,"If MIA does not convey 1st to CHA in 2027",0],[2029,1,"MIA",0,"",0],[2030,1,"MIA",1,"Or swap for least favorable of MIL and POR (via MIL swap for MIA)",0],[2032,1,"MIA",0,"",0],[2027,2,"OKC",1,"Least favorable of HOU, IND, MIA and OKC then others to NYK, PHI and SAS (via HOU to DET to OKC; via UTA to SAS)",0]]},"MIL":{"name":"Milwaukee Bucks","color":"#00471b","capTotal":192395327,"apron":192535790,"tax":187760790,"hard":"first","players":[["Tyler Herro","SG",27,"11",33000000,33000000,0,1,"UFA","","","","RK-EXT","",2500000],["Myles Turner","C",30,"3",26584164,26584164,0,3,"UFA","P2","","","FA","27850077,29115990",0],["Kyle Kuzma","PF",31,"18",20490152,19431819,0,1,"UFA","","","","FA","",2275000],["Gary Trent Jr.","SG",28,"5",15200000,15200000,0,4,"UFA","","01/15/2027","","FA","16400000,16400000,16000000",0],["Caris LeVert","SG",32,"12",14809200,14809200,0,1,"UFA","","","","FA","",0],["AJ Green","SG",27,"20",10044644,10044644,0,4,"UFA","","","","VET-EXT","10848215,11651786,12455355",0],["Brayden Burries","SG",21,"0",6417360,6417360,0,4,"RFA","T2,T3","","","RK-1ST","6738000,7058520,8999614",0],["Jaime Jaquez Jr.","SF",25,"24",5939141,5939141,0,1,"RFA","","","","RK-1ST","",0],["Ousmane Dieng","SF",23,"21",5750000,5750000,0,3,"UFA","T2","12/15/2026","","FA","5750000,5750000",0],["Nate Ament","PF",20,"15",5502000,5502000,0,4,"RFA","T2,T3","","","RK-1ST","5777280,6052200,8648594",0],["Kel'el Ware","C",22,"9",4654920,4654920,0,2,"RFA","T1","","","RK-1ST","7135992",0],["Ryan Rollins","PG",24,"13",4000000,4000000,0,2,"UFA","P1","","","FA","4000000",0],["Kasparas Jakucionis","PG",20,"25",3841680,3841680,0,3,"RFA","T1,T2","","","RK-1ST","4024440,6205687",0],["Jericho Sims","C",28,"00",2801346,2801346,0,1,"UFA","","","","FA","",0],["Bogoljub Markovi\u0107","PF",21,"23",1357763,1357763,0,4,"UFA","T3","","","RK-2ND","2294370,2694363,2918152",0],["Kam Jones","PG",24,"19",0,0,1,1,"","","","","TWO-WAY","",0],["Pete Nance","PF",26,"35",0,0,1,1,"","","11/18/2026","","TWO-WAY","",0],["Cormac Ryan","SG",28,"30",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Damian Lillard",21311053],["Jr. Kevin Porter Jr.",5390700],["Vasilije Micic",666667]],"picks":[[2028,1,"MIL",1,"Or swap with POR (via POR swap for MIL)",0],[2028,1,"POR",1,"or swap with MIL",0],[2030,1,"MIL",1,"Or swap with POR (via POR swap for MIL) or swap for most favorable of MIL and POR (via MIL swap for MIA)",0],[2030,1,"POR",1,"Or swap with MIL",0],[2031,1,"MIA",0,"",0],[2031,1,"MIL",0,"",0],[2032,1,"MIL",0,"",0],[2033,1,"MIA",0,"",0],[2033,1,"MIL",0,"",0],[2027,2,"DAL",1,"Less favorable of BKN and DAL to MIL then other to WAS (via DET)",0],[2027,2,"MIL",0,"(via PHI to DET)",0],[2033,2,"MIA",0,"",0],[2033,2,"MIL",0,"",0]]},"MIN":{"name":"Minnesota Timberwolves","color":"#266092","capTotal":252638472,"apron":216680954,"tax":214930954,"hard":"second","players":[["Anthony Edwards","SG",25,"5",48924624,48924624,0,3,"UFA","","","","DRK-EXT","52298736,55672848",0],["LaMelo Ball","PG",25,"1",40770520,40770520,0,3,"UFA","","","","DRK-EXT","43582280,46394040",0],["Rudy Gobert","C",34,"27",36500000,36500000,0,2,"UFA","P1","","","VET-EXT","38000000",0],["Jaden McDaniels","SF",26,"3",26200000,26200000,0,4,"UFA","","","","RK-EXT","28006898,29813790,40000000",1000000],["Ayo Dosunmu","PG",27,"13",19310345,19310345,0,5,"UFA","P4","01/15/2027","","FA","20855173,22400001,23944829,25489652",0],["Donte DiVincenzo","SG",30,"0",12535000,12535000,0,1,"UFA","","","","FA","",750000],["Jonathan Kuminga","PF",24,"24",6064000,6064000,0,2,"UFA","P1","12/15/2026","","FA","6367200",0],["Cody Williams","SF",22,"9",6015600,6015600,0,2,"RFA","T1","10/29/2026","","RK-1ST","7669890",0],["Joan Beringer","C",20,"19",4411200,4411200,0,3,"RFA","T1,T2","","","RK-1ST","4621200,7098163",0],["Jaylen Clark","SG",25,"7",3086420,3086420,0,3,"UFA","","01/15/2027","","FA","3333334,3580246",0],["Terrence Shannon Jr.","SG",26,"4",2801640,2801640,0,2,"RFA","T1","","","RK-1ST","5054159",0],["Trey Lyles","PF",31,"41",2449421,1500000,0,1,"UFA","N0","12/15/2026","","FA","",0],["Nah'Shon Hyland","PG",26,"8",2449421,2449421,0,1,"UFA","N0","12/15/2026","","FA","",0],["Isaiah Evans","SG",21,"33",1357763,1357763,0,4,"UFA","T3","12/15/2026","","RK-2ND","2294370,2694363,2918152",0],["Zyon Pullin","PG",25,"15",0,0,1,1,"","","","","TWO-WAY","",0],["Rocco Zikarsky","C",20,"44",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["John Konchar",2055000]],"picks":[[2028,1,"CHA",1,"Or swap for MIN (via CHA swap for MIN)",0],[2028,1,"MIN",1,"Or swap with CHA (via CHA swap for MIN)",0],[2029,1,"MIN",1,"If 1-5 \u00b7 If 6-30 then two most favorable of CLE, MIN 6-30 and UTA then other to PHX",0],[2030,1,"MIN",1,"If 1 \u00b7 Least favorable of MIN 2-30, CHA, DAL and SAS (via SAN swap for DAL; via SAN swap of SAN or DAL for MIN; via CHA swap for MIN)",0],[2032,1,"MIN",0,"",1],[2030,2,"MEM",1,"31-50 \u00b7 51-60",0]]},"NOP":{"name":"New Orleans Pelicans","color":"#0a2240","capTotal":212202566,"apron":202788678,"tax":196369877,"hard":"first","players":[["Zion Williamson","PF",26,"1",42166510,42166510,0,2,"UFA","N1","","","DRK-EXT","44886930",0],["Jordan Poole","SG",27,"3",34044642,34044642,0,1,"UFA","","","","RK-EXT","",3750000],["Dejounte Murray","PG",30,"5",32785071,28767536,0,2,"UFA","P1","","","VET-EXT","30751504",2435997],["Trey Murphy III","SF",26,"25",27000000,27000000,0,3,"UFA","","","","RK-EXT","29000000,31000000",0],["Herb Jones","SF",28,"2",14898786,14898786,0,4,"UFA","P3","","","FA","20858300,22526964,24195628",0],["Jeremiah Fears","PG",20,"0",7896240,7896240,0,3,"RFA","T2","","","RK-1ST","8271960,10505389",0],["Bennedict Mathurin","SG",24,"24",7500000,7500000,0,2,"UFA","P1","12/15/2026","","FA","7875000",0],["Saddiq Bey","SF",27,"41",6557080,6440678,0,5,"","","11/17/2026","","FA","20108695,18500000,16891305,32",232804],["Derik Queen","C",22,"22",5416080,5416080,0,3,"RFA","T2","","","RK-1ST","5673840,8107918",0],["DeAndre Jordan","C",38,"6",3876529,3876529,0,2,"UFA","","12/15/2026","","FA","4070355",0],["Yves Missi","C",22,"21",3512760,3512760,0,2,"RFA","","","","RK-1ST","5595827",0],["AJ Johnson","SG",22,"14",3237120,3237120,0,2,"RFA","T1","11/08/2026","","RK-1ST","5493394",0],["Bryce McGowens","SG",24,"11",2584539,2584539,0,2,"UFA","T1","","","ROS","2934742",0],["Trendon Watford","PF",26,"9",2449421,500000,0,1,"UFA","N0","12/15/2026","","FA","",0],["Karlo Matkovic","PF",25,"17",2296271,2296271,0,1,"RFA","","","","RK-2ND","",0],["Malik Dia","F",22,"8",0,0,1,1,"","","","","TWO-WAY","",0],["Jaron Pierre Jr.","F",24,"10",0,0,1,1,"","","","","TWO-WAY","",0],["Julian Reese","F",23,"13",0,0,1,1,"","","10/24/2026","","TWO-WAY","",0]],"dead":[["Taj Gibson",148828]],"picks":[[2027,1,"NOP",1,"Most favorable of MIL and NOP then other to ATL",0],[2028,1,"NOP",0,"",0],[2029,1,"NOP",0,"",0],[2030,1,"NOP",0,"",0],[2031,1,"NOP",0,"",0],[2032,1,"NOP",0,"",0],[2033,1,"NOP",0,"",0],[2027,2,"HOU",1,"Second most favorable of HOU, IND, MIA and OKC to NYK; then others to PHI and SAS (via HOU to DET to UTA to OKC)",0],[2030,2,"NOP",1,"Or swap with ORL (via ORL swap for NOP)",0],[2030,2,"ORL",1,"Or swap with NOP",0],[2032,2,"NOP",1,"MEM right to swap",0],[2033,2,"NOP",0,"",0]]},"NYK":{"name":"New York Knicks","color":"#1d428a","capTotal":223326074,"apron":220876653,"tax":220876653,"hard":"","players":[["Karl-Anthony Towns","C",31,"32",57078728,57078728,0,2,"UFA","P1","","","DVET-EXT","61015192",0],["OG Anunoby","PF",29,"8",42500000,42500000,0,3,"UFA","P2","","","FA","45431034,48362068",0],["Jalen Brunson","PG",30,"11",37739521,37739521,0,3,"UFA","P2","","","VET-EXT","40535041,43330561",0],["Mikal Bridges","SG",30,"25",33482145,33482145,0,4,"UFA","P3","","","VET-EXT","36160714,38839285,41517856",0],["Josh Hart","SF",31,"3",20923760,20923760,0,2,"UFA","T1","","","VET-EXT","22375280",0],["Landry Shamet","SG",29,"44",5490967,5490967,0,4,"UFA","N2,P3","01/15/2027","","FA","5737500,6162500,6587500",0],["Jose Alvarado","PG",28,"5",4439656,4439656,0,3,"UFA","N2","12/15/2026","","FA","4794828,5150000",0],["Miles McBride","PG",26,"2",3956523,3956523,0,1,"UFA","","","","VET-EXT","",0],["Pacome Dadiet","SF",21,"4",2983680,2983680,0,2,"RFA","T1","","","RK-1ST","5373608",0],["Mohamed Diawara","PF",21,"51",2622139,2622139,0,4,"UFA","N2,T3","01/15/2027","","FA","2753246,2884353,3019000",0],["Jordan Clarkson","SG",34,"00",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Andre Drummond","C",33,"0",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["James Wiseman","C",25,"35",2449421,2449421,0,1,"UFA","N0","12/16/2026","","FA","",0],["Tyler Kolek","PG",25,"13",2296271,2296271,0,2,"RFA","T1","","","RK-2ND","2486995",0],["Jaden Akins","G",23,"14",0,0,1,1,"","","10/30/2026","","TWO-WAY","",0],["Kevin McCullar Jr.","SG",25,"9",0,0,1,1,"","","10/26/2026","","TWO-WAY","",0],["Tyler Nickel","F",23,"55",0,0,1,1,"","","10/26/2026","","TWO-WAY","",0]],"dead":[["Drew Eubanks",15000]],"picks":[[2028,1,"NYK",1,"Or swap with BKN (via BKN swap for NYK)",0],[2030,1,"NYK",0,"",0],[2032,1,"NYK",0,"",0],[2033,1,"NYK",0,"",0],[2027,2,"IND",1,"Third most favorable of HOU, IND, MIA and OKC to NYK; then others to PHI and SAS (via HOU to DET to UTA to OKC)",0],[2027,2,"NYK",0,"",0],[2027,2,"WAS",0,"(via HOU to OKC)",0],[2028,2,"BOS",1,"If 31-45 if BOS is 1 in 2028 \u00b7 If 46-60 (via ORL to PHX)",0],[2028,2,"PHX",1,"Less favorable of CHI, IND and PHX then others to CHI and IND (via IND)",0],[2029,2,"PHX",0,"",0],[2029,2,"SAC",0,"(via WAS to HOU)",0],[2030,2,"PHI",0,"(via DAL)",0],[2032,2,"DAL",0,"",0],[2032,2,"NYK",0,"",0],[2033,2,"NYK",0,"",0],[2033,2,"PHX",0,"",0]]},"OKC":{"name":"Oklahoma City Thunder","color":"#007ac1","capTotal":216464608,"apron":214779492,"tax":214279492,"hard":"","players":[["Chet Holmgren","PF",24,"7",41240250,41240250,0,5,"UFA","","","","rookie-maximum-extension","44539470,47838690,51137910,54437130",0],["Jalen Williams","SF",25,"8",41240250,41240250,0,5,"UFA","","","","DRK-EXT","44539470,47838690,51137910,54437130",0],["Shai Gilgeous-Alexander","PG",28,"2",40806150,40806150,0,5,"UFA","P4","","","DRK-EXT","61600000,66528000,71456000,76384000",0],["Isaiah Hartenstein","C",28,"55",23148148,23148148,0,3,"UFA","M2","12/15/2026","","FA","25000000,26851852",0],["Alex Caruso","SG",32,"9",19550160,19550160,0,3,"UFA","","","","VET-EXT","20998320,22446480",0],["Jaylin Williams","C",24,"6",7774648,7774648,0,2,"UFA","T1","","","VET-EXT","7774648",0],["Cason Wallace","PG",23,"22",7420806,7420806,0,6,"UFA","","07/01/2027","","RK-1ST","23275862,25137931,27000000,28862069,30724138",0],["Aday Mara","C",21,"15",5791680,5791680,0,4,"RFA","T2,T3","","","RK-1ST","6081480,6371160,8779459",0],["Nikola Topic","PG",21,"44",5429760,5429760,0,2,"RFA","T1","","","RK-1ST","7482210",0],["Kenrich Williams","PF",32,"34",5000000,5000000,0,1,"UFA","","12/15/2026","","FA","",500000],["Thomas Sorber","C",21,"12",4887720,4887720,0,3,"RFA","T1,T2","","","RK-1ST","5120400,7849573",0],["Bennett Stirtz","PG",23,"14",4717320,4717320,0,4,"RFA","T2,T3","","","RK-1ST","4953240,5189400,7960540",0],["Jared McCain","PG",22,"3",4422600,4422600,0,2,"RFA","T1","","","RK-1ST","6784268",0],["Ajay Mitchell","PG",24,"25",2850000,1500000,0,2,"UFA","N0,T1","","","FA","2850000",0],["Brooks Barnhizer","SF",24,"23",0,0,1,1,"","","","","TWO-WAY","",0],["Josh Dix","SG",22,"21",0,0,1,1,"","","","","TWO-WAY","",0],["Otega Oweh","SG",23,"13",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"DEN",1,"If 1-5 \u00b7 If 6-30",0],[2027,1,"LAC",1,"Two most favorable of DEN 6-30, LAC and OKC (via OKC swap for LAC)",0],[2027,1,"SAS",1,"If 1-16 \u00b7 If 17-30 (via SAC)",0],[2028,1,"DAL",1,"Or swap with OKC (via OKC swap for DAL)",0],[2028,1,"DEN",1,"If 1-5 if not already settled with OKC \u00b7 If 6-30 if not already settled",0],[2028,1,"OKC",1,"Or swap with DAL (via OKC swap for DAL)",0],[2029,1,"DEN",1,"If 1-5 if not already settled with OKC or 1-5 if DEN conveys 1st to OKC by 2027 \u00b7 If 6-30 if not already settled or 6-30 if DEN conveys 1st to OKC by 2027",0],[2029,1,"OKC",0,"",0],[2030,1,"DEN",1,"If 1-5 if not already settled with OKC or 1-5 if DEN conveys 1st to OKC by 2028 \u00b7 If 6-30 if not already settled or 6-30 if DEN conveys 1st to OKC by 2028",0],[2030,1,"OKC",0,"",0],[2031,1,"OKC",0,"",0],[2032,1,"OKC",0,"",0],[2033,1,"OKC",0,"",0],[2027,2,"CHA",1,"OKC If SAS is 1-16, SAC If SAS is 17-30",0],[2027,2,"CHI",0,"(via WAS to NOP to WAS to DAL)",0],[2027,2,"SAC",1,"OKC If SAS is 1-16, SAC If SAS is 17-30",0],[2028,2,"UTA",0,"",0],[2029,2,"BOS",0,"",0],[2029,2,"MIA",1,"Less favorable of ATL and MIA the other to CHA (via OKC)",0],[2029,2,"OKC",0,"",0],[2030,2,"ATL",0,"",0],[2030,2,"DEN",1,"Two least favorable picks of DEN, HOU and MIA then other to MEM (via CHA)",0],[2030,2,"MIA",1,"Two least favorable picks of DEN, HOU and MIA then other to MEM",0],[2030,2,"MIN",0,"(via DET)",0],[2030,2,"OKC",0,"",0],[2031,2,"ATL",1,"Most favorable of ATL and HOU 31-55 (or just ATL if HOU 56-60) (via ATL)",0],[2031,2,"OKC",0,"",0],[2031,2,"ORL",1,"Least favorable of ORL and NOP (via ORL swap for NOP (via NOP))",0],[2032,2,"LAL",1,"More favorable of ATL and LAL then other to ATL (via ATL)",0],[2032,2,"OKC",0,"",0]]},"ORL":{"name":"Orlando Magic","color":"#0150b5","capTotal":222499858,"apron":219189751,"tax":217865321,"hard":"","players":[["Franz Wagner","SF",25,"22",41754690,41754690,0,4,"UFA","","","","DRK-EXT","44847630,47940570,51033510",0],["Paolo Banchero","PF",24,"5",41240250,41240250,0,5,"UFA","P4","","","DRK-EXT","44539470,47838690,51137910,54437130",0],["Desmond Bane","SG",28,"3",39446090,39446090,0,3,"UFA","","","","RK-EXT","42166510,44886930",1324430],["Jalen Suggs","SG",25,"4",32400000,32400000,0,4,"UFA","","","","RK-EXT","29600000,26800000,26700000",0],["Wendell Carter Jr.","C",27,"34",18102000,18102000,0,3,"UFA","T2","","","VET-EXT","19550160,20998320",0],["Anthony Black","SG",23,"0",10106316,10106316,0,1,"RFA","","","","RK-1ST","",0],["Goga Bitadze","C",27,"35",7608696,7608696,0,1,"UFA","","","","FA","",0],["Tristan Da Silva","SF",25,"23",3991200,3991200,0,2,"RFA","","","","RK-1ST","6138466",0],["Jase Richardson","SG",21,"11",3132360,3132360,0,3,"RFA","T2","","","RK-1ST","3282000,5910882",0],["Jamal Cain","SF",27,"8",2584539,2584539,0,1,"UFA","","","","ROS","",0],["Nikola Vucevic","C",36,"9",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Jonathan Isaac","PF",29,"1",2449421,3524115,0,1,"UFA","","12/15/2026","","FA","",0],["Jevon Carter","PG",31,"2",2449421,3506659,0,1,"UFA","","12/15/2026","","FA","",0],["Noah Penda","SF",22,"93",2150917,2150917,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["Colin Castleton","PF",26,"14",0,0,1,1,"","","","","TWO-WAY","",0],["Alex Morales","G",29,"30",0,0,1,1,"","","","","TWO-WAY","",0],["Izaiyah Nelson","C",23,"25",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Jonathan Isaac",8000000]],"picks":[[2027,1,"ORL",0,"",0],[2029,1,"MEM",1,"Or swap for ORL 3-30 (via MEM swap for ORL)",0],[2029,1,"ORL",1,"If 1-2 or swap 3-30 with MEM (via MEM swap for ORL",0],[2031,1,"ORL",0,"",0],[2032,1,"ORL",0,"",0],[2033,1,"ORL",0,"",0],[2028,2,"WAS",1,"More favorable of LAL and WAS to ORL then other to WAS",0],[2029,2,"ORL",1,"If ORL 1-2 in 2029 \u00b7 If ORL 3-30 in 2029",0],[2030,2,"MIL",0,"",0],[2030,2,"NOP",1,"Or swap with ORL (via ORL swap for NOP)",0],[2030,2,"ORL",1,"Or swap with NOP",0],[2031,2,"NOP",1,"Least favorable of ORL and NOP (via ORL swap for NOP (via NOP))",0],[2032,2,"ORL",0,"",0],[2033,2,"ORL",0,"",0]]},"PHI":{"name":"Philadelphia 76ers","color":"#1d428a","capTotal":218904967,"apron":207186472,"tax":207186472,"hard":"first","players":[["Joel Embiid","C",32,"21",57985752,57985752,0,1,"UFA","P0","","","VET-EXT","",0],["Jaylen Brown","SF",30,"7",57736350,57078728,0,1,"UFA","","","","DVET-EXT","",0],["Tyrese Maxey","PG",26,"0",40770520,40770520,0,1,"UFA","","","","FA","",0],["VJ Edgecombe","SG",21,"77",11663880,11663880,0,1,"RFA","T0","","","RK-1ST","",0],["Dean Wade","PF",30,"45",9000000,9000000,0,2,"UFA","N1","12/15/2026","","FA","10350000",0],["Anfernee Simons","SG",27,"5",6000000,6000000,0,1,"UFA","","12/15/2026","","FA","",0],["LeBron James","PF",42,"23",3876529,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Labaron Philon Jr.","PG",21,"00",3597120,3597120,0,2,"RFA","T0,T1","","","RK-1ST","6508871",0],["Dominick Barlow","PF",23,"25",3415000,3415000,0,1,"","","","","ROS","",0],["Ariel Hukporti","C",24,"55",3400000,3400000,0,1,"","","12/15/2026","inj","FA","",0],["Jabari Walker","SF",24,"33",2584539,250000,0,1,"","","","","ROS","",0],["Kentavious Caldwell-Pope","SG",33,"1",2449421,3876529,0,1,"","","12/15/2026","","FA","",0],["Justin Edwards","SG",23,"11",2411090,2411090,0,1,"UFA","","","","FA","",0],["Adem Bona","C",23,"30",2296271,2296271,0,1,"UFA","","","","RK-2ND","",0],["Tacko Fall","0 Two-Way",-10,"99",0,0,1,1,"","","","","TWO-WAY","",0],["Caleb Love","0 Two-Way",4,"8",0,0,1,1,"","","","","TWO-WAY","",0],["Rayan Rupert","0 Two-Way",-10,"12",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"PHI",0,"",0],[2028,1,"PHI",1,"If 1-8 or LAC or BOS (via BOS swap for LAC or PHI 1-8) \u00b7 If 9-30",0],[2029,1,"LAC",1,"If 1-3 \u00b7 Or swap 4-30 with PHI (via PHI swap for LAC)",0],[2029,1,"PHI",1,"Or swap with LAC 4-30 (via PHI swap for LAC)",0],[2030,1,"PHI",0,"",0],[2032,1,"PHI",0,"",0],[2033,1,"PHI",0,"",0],[2027,2,"MIA",1,"Most favorable of HOU, IND, MIA and OKC to PHI; then others to NYK and SAS (via HOU to DET to UTA to OKC)",0],[2027,2,"PHX",1,"Most favorable of GSW and PHX to PHI then other to WAS (via WAS)",0],[2028,2,"DET",1,"Least favorable of DET 31-55, CHA, LAC, MIA and NYK to UTA then others to DET \u00b7 If 56-60",0],[2028,2,"GSW",1,"Two least favorable of GSW, MIL and OKC to PHI then other to BOS (via POR to WAS)",0],[2028,2,"OKC",1,"Two least favorable of GSW, MIL and OKC to PHI then other to BOS",0],[2028,2,"PHI",1,"PHI pick if PHI conveys second 1st to BKN by 2028; BKN pick if PHI does not convey second 1st to BKN by 2028",0],[2029,2,"PHI",0,"",0],[2030,2,"POR",1,"Second most favorable of PHX, POR and WAS then others to BOS and WAS (via WAS to PHI)",0],[2031,2,"PHI",0,"",0],[2032,2,"PHI",1,"Or MEM via MEM swap for PHI",0],[2033,2,"PHI",0,"",0]]},"POR":{"name":"Portland Trail Blazers","color":"#e03a3e","capTotal":203547663,"apron":192093473,"tax":192093473,"hard":"first","players":[["Ja Morant","PG",27,"1",42166510,42166510,0,2,"UFA","","","","DRK-EXT","44886930",0],["Jrue Holiday","SG",36,"5",34800000,34800000,0,2,"UFA","P1","","","VET-EXT","37200000",0],["Shaedon Sharpe","SG",23,"17",20089287,20089287,0,4,"UFA","","","","RK-EXT","21696429,23303571,24910713",0],["Toumani Camara","PF",26,"33",18080358,18080358,0,4,"UFA","","","","VET-EXT","19526786,20973214,22419642",0],["Robert Williams III","C",29,"35",14000000,14000000,0,3,"UFA","N1,N2","12/30/2026","","VET-EXT","14500000,15000000",0],["Scoot Henderson","PG",22,"00",13585523,13585523,0,1,"RFA","","","","RK-1ST","",0],["Damian Lillard","PG",36,"0",13398800,13398000,0,2,"UFA","N0,P1","","ntc","FA","14104000",0],["Deni Avdija","SF",26,"8",13125000,13125000,0,2,"UFA","","","","RK-EXT","11875000",0],["Donovan Clingan","C",22,"23",7519920,7519920,0,2,"RFA","T1","","","RK-1ST","9550298",0],["Yang Hansen","C",21,"16",4643520,4643520,0,3,"RFA","T1,T2","","","RK-1ST","4864920,7462788",0],["Micah Potter","C",28,"9",2801346,2801346,0,1,"UFA","","","","ROS","",0],["Vit Krejci","SG",26,"27",2667944,2667944,0,2,"UFA","T1","","","FA","3005085",0],["Sidy Cissoko","SF",22,"91",2497812,2497812,0,1,"UFA","","","","ROS","",0],["Branden Carlson","C",27,"10",2449421,2449421,0,1,"RFA","","12/15/2026","","FA","",0],["Jayson Kent","SG",24,"29",0,0,1,1,"","","","","TWO-WAY","",0],["John Tonje","G",25,"2",0,0,1,1,"","","","","TWO-WAY","",0],["Chris Youngblood","SG",24,"11",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["Didi Louzada",268032]],"picks":[[2027,1,"POR",1,"",0],[2028,1,"MIL",1,"Or swap with POR (via POR swap for MIL)",0],[2028,1,"ORL",0,"(via MEM)",0],[2028,1,"POR",1,"or swap with MIL",0],[2029,1,"BOS",1,"Most and least favorable of BOS, MIL and POR to POR then other to WAS (via BOS to POR; via MIL to POR; via POR to WAS)",0],[2029,1,"MIL",1,"Most and least favorable of BOS, MIL and POR to POR then other to WAS (via BOS to POR; via MIL to POR; via POR to WAS)",0],[2030,1,"POR",1,"Or swap with MIL",0],[2031,1,"POR",0,"",0],[2032,1,"POR",0,"",0],[2033,1,"POR",0,"",0],[2027,2,"MIN",0,"(via HOU to OKC to NYK)",0],[2028,2,"POR",1,"(via CHI to SAC to MEM)",0],[2028,2,"SAC",0,"(via CHI to SAC to MEM)",0],[2029,2,"IND",1,"Less favorable of IND and WAS to POR then other to IND (via NYK)",0],[2031,2,"POR",0,"",0],[2032,2,"POR",0,"",0],[2033,2,"POR",0,"",0]]},"PHX":{"name":"Phoenix Suns","color":"#29127a","capTotal":239926801,"apron":213776085,"tax":213776085,"hard":"second","players":[["Devin Booker","SG",30,"15",57078728,57078728,0,4,"UFA","P3","","","DVET-EXT","61015192,64680000,67914000",0],["Jalen Green","SG",24,"4",36251166,36000000,0,2,"UFA","P1","","","RK-EXT","36000000",0],["Miles Bridges","PF",28,"22",22826087,22826087,0,1,"UFA","","","","FA","",0],["Dillon Brooks","SF",31,"3",20992727,19992727,0,4,"UFA","","02/08/2027","","S&T","22530864,24333333,26135802",0],["Mark Williams","C",25,"25",11728395,11728395,0,3,"UFA","","01/15/2027","","FA","12666667,13604938",0],["Collin Gillespie","PG",27,"12",10714286,10714286,0,4,"UFA","","01/15/2027","","FA","11571429,12428571,13285714",0],["Khaman Maluach","C",20,"10",6316680,6316680,0,3,"RFA","T2","","","RK-1ST","6617160,8436880",0],["Luke Kennard","SG",30,"8",6064000,6064000,0,2,"UFA","P1","12/15/2026","","FA","6367200",0],["Jordan Goodwin","PG",28,"23",5864198,5864198,0,3,"UFA","P2","01/15/2027","","FA","6333333,6802469",0],["Koa Peat","PF",20,"18",2926800,2926800,0,4,"RFA","T2,T3","","","RK-1ST","3073080,3219840,5811811",0],["Ryan Dunn","SF",24,"0",2784240,2784240,0,2,"RFA","","","","RK-1ST","5025553",0],["Jamaree Bouyea","PG",27,"17",2584539,2584539,0,1,"UFA","","","","ROS","",0],["Oso Ighodaro","C",24,"11",2296271,2296271,0,6,"","","04/19/2027","","RK-2ND","2486995,8950618,9666667,10382715,19",0],["Rasheer Fleming","PF",22,"20",2150917,2150917,0,3,"UFA","T2","","","RK-2ND","2525901,2735698",0],["Duop Reath","C",30,"26",0,0,1,1,"","","12/25/2026","","TWO-WAY","",0],["Pat Spencer","G",30,"61",0,0,1,1,"","","","","TWO-WAY","",0],["Drew Timme","F",26,"",0,0,1,1,"","","11/18/2026","","TWO-WAY","",0]],"dead":[["Bradley Beal",19383010],["Nassir Little",3107143],["E.J. Liddell",706898]],"picks":[[2027,1,"CLE",1,"Least favorable of CLE, MIN and UTA then others to MEM and UTA (via UTA)",0],[2028,1,"PHX",1,"Least Favorable of WAS and BKN, PHI 9-30 and PHX (via BKN and WAS swap for PHX)",0],[2029,1,"CHA",1,"Least favorable of CHA or CLE, MIN 6-30 and UTA (via CHA swap to PHX)",0],[2030,1,"PHX",1,"Least favorable of PHX, MEM and WAS",0],[2032,1,"PHX",0,"",1],[2032,2,"PHX",1,"Least favorable of HOU and PHX then other to CHI (via PHX)",0]]},"SAC":{"name":"Sacramento Kings","color":"#5a2d81","capTotal":216346916,"apron":201130158,"tax":197280158,"hard":"first","players":[["Zach LaVine","SG",31,"8",48967380,48967380,0,1,"UFA","","","","FA","",0],["Domantas Sabonis","C",30,"11",45472000,45472000,0,2,"UFA","","","","VET-EXT","48608000",2600000],["De'Andre Hunter","SF",29,"15",24910714,24910714,0,1,"UFA","","","","RK-EXT","",1250000],["Keegan Murray","PF",26,"13",24137936,24137936,0,5,"UFA","","","","RK-EXT","26068965,27999999,29931033,31862067",0],["Malik Monk","SG",28,"0",20190035,20190035,0,2,"UFA","N0,P1","","","FA","21582451",0],["Darius Acuff Jr.","PG",20,"5",8021640,8021640,0,4,"RFA","T2,T3","","","RK-1ST","8422920,8823600,11205972",0],["Precious Achiuwa","PF",27,"9",5477000,5477000,0,2,"UFA","","01/15/2027","","FA","5750850",0],["Nique Clifford","SF",24,"10",3263400,3263400,0,3,"RFA","T1,T2","","","RK-1ST","3418800,5979481",0],["Alex Karaban","SF",24,"33",2948280,2948280,0,4,"RFA","T2,T3","","","RK-1ST","3095640,3243120,5853832",0],["Ben Simmons","PG",30,"25",2449421,1000000,0,1,"UFA","N0","12/15/2026","","FA","",0],["Daeqwon Plowden","SG",28,"29",2449421,2449421,0,2,"UFA","T1","12/15/2026","","FA","2664401",0],["Maxime Raynaud","C",23,"42",2150918,2150918,0,2,"RFA","T1","","","RK-2ND","2525901",0],["Dylan Cardwell","C",25,"32",2150917,2150917,0,3,"UFA","N1,T2","","","ROS","2525901,2735698",0],["Emanuel Sharp","PG",22,"34",1357763,1357763,0,3,"RFA","T2","","","RK-2ND","2294370,2694363",0],["Leaky Black","SF",27,"19",0,0,1,1,"","","","","TWO-WAY","",0],["Jonathan Mogbo","C",25,"22",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[["DeMar DeRozan",3333333]],"picks":[[2027,1,"SAC",0,"",0],[2027,1,"SAS",1,"If 1-16 \u00b7 If 17-30 (via SAC)",0],[2028,1,"SAC",0,"",0],[2029,1,"SAC",0,"",0],[2030,1,"SAC",0,"",0],[2031,1,"MIN",0,"(via SAS)",0],[2031,1,"SAC",1,"Or swap with SAS (via SAS swap for SAC)",0],[2031,1,"SAS",1,"Or swap for SAC",0],[2032,1,"SAC",0,"",0],[2033,1,"SAC",0,"",0],[2027,2,"CHA",1,"OKC If SAS is 1-16, SAC If SAS is 17-30",0],[2027,2,"SAC",1,"OKC If SAS is 1-16, SAC If SAS is 17-30",0]]},"SAS":{"name":"San Antonio Spurs","color":"#000000","capTotal":231173962,"apron":200979967,"tax":198279967,"hard":"first","players":[["De'Aaron Fox","PG",29,"4",49488300,49488300,0,4,"UFA","","","","VET-EXT","53447364,57406428,61365492",0],["Devin Vassell","SG",26,"24",27500000,27000000,0,3,"UFA","","","","RK-EXT","25108696,27500000",1700000],["Keldon Johnson","SF",27,"3",18000000,17500000,0,1,"UFA","","","","RK-EXT","",1000000],["Victor Wembanyama","C",23,"1",16868246,16868246,0,6,"UFA","P5","07/01/2027","","RK-1ST","44000000,47520000,51040000,54560000,58080000",0],["Julian Champagnie","SF",25,"30",15350000,15350000,0,3,"UFA","","12/29/2026","","VET-EXT","15000000,14650000",0],["Tobias Harris","PF",34,"23",15044000,15044000,0,2,"UFA","","12/15/2026","","FA","15796200",0],["Dylan Harper","PG",20,"2",12989040,12989040,0,3,"RFA","T2","","","RK-1ST","13607760,17172994",0],["Luke Kornet","C",31,"7",10450000,10450000,0,3,"UFA","N1,T2","","","FA","9900000,9350000",0],["Stephon Castle","SG",22,"5",10015920,10015920,0,2,"RFA","","","","RK-1ST","12670139",0],["Harrison Barnes","PF",34,"40",8000000,8000000,0,1,"UFA","","12/15/2026","","FA","",0],["Carter Bryant","SF",21,"11",5145360,5145360,0,3,"RFA","T2","","","RK-1ST","5390640,7983539",0],["Jayden Quaintance","C",19,"22",3902760,3902760,0,4,"RFA","T2,T3","","","RK-1ST","4097880,4292880,6619621",0],["Tarris Reed Jr.","C",23,"10",3076920,3076920,0,4,"RFA","T2,T3","","","RK-1ST","3230520,3384480,6102218",0],["Jordan McLaughlin","PG",30,"0",2449421,3286399,0,1,"UFA","","12/15/2026","","FA","",0],["Maliq Brown","PG",23,"15",0,0,1,1,"","","","","TWO-WAY","",0],["Ja'Kobi Gillespie","SG",22,"17",0,0,1,1,"","","","","TWO-WAY","",0],["David Jones-Garcia","SF",25,"25",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"ATL",0,"",0],[2028,1,"BOS",1,"If 1 \u00b7 Or swap 2-30 with SAS (via SAS swap for BOS)",0],[2028,1,"SAS",1,"Or swap with BOS 2-30 (via SAS swap for BOS)",0],[2029,1,"SAS",0,"",0],[2030,1,"SAS",1,"Most favorable of SAS, DAL and MIN 2-30 (via SAN swap for DAL; via SAN swap of SAN or DAL for MIN)",0],[2031,1,"SAC",1,"Or swap with SAS (via SAS swap for SAC)",0],[2031,1,"SAS",1,"Or swap for SAC",0],[2032,1,"SAS",0,"",0],[2033,1,"SAS",0,"",0],[2027,2,"SAS",1,"More favorable SAS and least favorable of HOU, IND, MIA and OKC then others to NYK and PHI (via HOU to DET to OKC; via UTA to SAS)",0],[2028,2,"BOS",1,"If 31-45 if BOS is 1 in 2028 \u00b7 If 46-60 (via ORL to PHX)",0],[2028,2,"NOP",0,"",0],[2028,2,"SAS",0,"",0],[2029,2,"LAC",0,"(via PHI)",0],[2029,2,"NOP",0,"",0],[2029,2,"SAS",0,"",0],[2030,2,"CLE",0,"",0],[2030,2,"SAC",0,"(via IND)",0],[2030,2,"SAS",0,"",0],[2031,2,"SAS",0,"",0],[2032,2,"SAS",0,"",0],[2033,2,"SAS",0,"",0]]},"TOR":{"name":"Toronto Raptors","color":"#d91244","capTotal":214237151,"apron":208051402,"tax":201453193,"hard":"","players":[["Kawhi Leonard","SF",35,"2",50300000,50300000,0,3,"UFA","P2","","","VET-EXT","56100000,58900000",0],["Scottie Barnes","PF",25,"4",41754690,41754690,0,4,"UFA","","","","DRK-EXT","44847630,47940570,51033510",0],["Immanuel Quickley","PG",27,"5",32500000,32500000,0,3,"UFA","","","","FA","32500000,32500000",2500000],["R.J. Barrett","SG",26,"9",29616071,29616071,0,1,"UFA","","","","RK-EXT","",3598209],["Jakob Poeltl","C",31,"19",19500000,19500000,0,4,"UFA","","","","FA","27300000,29484000,27300000",500000],["Collin Murray-Boyles","PF",21,"30",6649560,6649560,0,3,"RFA","T2","","","RK-1ST","6966000,8874684",0],["Allen Graves","SF",20,"22",4065720,4065720,0,4,"RFA","T2,T3","","","RK-1ST","4268880,4472640,6887866",0],["Ja'Kobe Walter","SG",22,"14",3811800,3811800,0,2,"RFA","","","","RK-1ST","5870172",0],["Kyle Anderson","PF",33,"12",2449421,3876529,0,1,"UFA","","12/15/2026","","FA","",0],["Trayce Jackson-Davis","PF",26,"32",2406205,2406205,0,1,"UFA","","","","RK-2ND","",0],["Jamison Battle","SF",25,"77",2296271,2296271,0,1,"RFA","N0","","","ROS","",0],["Jamal Shead","PG",24,"23",2296271,2296271,0,4,"UFA","","","","RK-2ND","8000000,8000000,8000000",0],["Alijah Martin","SG",25,"55",2185116,2185116,0,2,"RFA","N1","01/15/2027","","FA","2571895",0],["Jaden Bradley","PG",23,"8",1357763,1357763,0,4,"UFA","N1,N2,T3","12/21/2026","","","2294370,2694363,2918152",0],["Nate Bittle","C",23,"",0,0,1,1,"","","11/16/2026","","TWO-WAY","",0],["Malachi Smith","G",27,"18",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"TOR",1,"LAC right to swap",0],[2028,1,"TOR",0,"",0],[2029,1,"TOR",0,"",0],[2030,1,"TOR",0,"",0],[2032,1,"TOR",0,"",0],[2027,2,"TOR",0,"",0],[2028,2,"TOR",0,"",0],[2029,2,"TOR",0,"",0]]},"UTA":{"name":"Utah Jazz","color":"#4e008e","capTotal":190850101,"apron":182965101,"tax":182965101,"hard":"first","players":[["Jaren Jackson Jr.","PF",27,"20",49000000,49000000,0,4,"UFA","P3","","","VET-EXT","50500000,52000000,53500000",0],["Lauri Markkanen","SF",29,"23",46113154,46113154,0,3,"UFA","","","","VET-EXT","49824681,53536209",0],["Josh Green","SG",26,"5",14679012,14679012,0,1,"UFA","","10/29/2026","","RK-EXT","",0],["Darryn Peterson","SG",20,"22",13195320,13195320,0,4,"RFA","T2,T3","","","RK-1ST","13855320,14515320,18318335",0],["Jusuf Nurkic","C",32,"30",11458333,11458333,0,2,"UFA","","12/15/2026","","FA","10541667",0],["Ace Bailey","SF",20,"19",9523080,9523080,0,3,"RFA","T1,T2","","","RK-1ST","9976560,12640302",0],["Keyonte George","SG",23,"3",6563925,6563925,0,6,"UFA","","07/01/2027","","RK-1ST","28703704,29851852,31000000,32148148,33296296",0],["Jaxson Hayes","C",26,"11",6000000,6000000,0,2,"UFA","T1","12/15/2026","","FA","6000000",0],["Josh Okogie","SG",28,"21",6000000,6000000,0,2,"UFA","T1","12/15/2026","","FA","6000000",0],["Brice Sensabaugh","SF",23,"28",4862237,4862237,0,1,"RFA","","","","RK-1ST","",0],["Sviatoslav Mykhailiuk","SG",29,"10",3850000,3850000,0,2,"UFA","N0,T1","","","FA","4025000",0],["Mohamed Bamba","C",28,"44",3506659,500000,0,2,"UFA","N0,T1","12/15/2026","","FA","3700320",0],["Kyle Filipowski","PF",23,"2",3000000,3000000,0,2,"RFA","T1","","","RK","3000000",0],["Isaiah Collier","PG",22,"8",2763960,2763960,0,2,"RFA","T1","","","RK-1ST","4988948",0],["Tony Bradley","C",29,"13",2449421,2449421,0,1,"UFA","N0","12/30/2026","","Exhibit-9 Conversion to Standard","",0],["Trey Alexander","SG",23,"15",0,0,1,1,"","","","","TWO-WAY","",0],["Harrison Ingram","SF",24,"00",0,0,1,1,"","","11/16/2026","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"MIN",1,"Second most favorable of CLE, MIN and UTA then others to MEM and PHX",0],[2028,1,"UTA",1,"Most favorable of LAL and more favorable or CLE and UTA then other to LAL (via UTA swap for CLE and LAL)",0],[2029,1,"MIN",1,"If 1-5 \u00b7 If 6-30 then two most favorable of CLE, MIN 6-30 and UTA then other to PHX",0],[2029,1,"UTA",1,"Two most favorable of CLE, MIN 6-30 and UTA then other to CHA",0],[2030,1,"LAL",1,"Or swap with UTA (via UTA swap for LAL)",0],[2030,1,"UTA",1,"Or swap for LAL (via UTA swap for LAL)",0],[2031,1,"LAL",0,"",0],[2031,1,"UTA",0,"",0],[2032,1,"UTA",0,"",0],[2033,1,"LAL",0,"",0],[2033,1,"UTA",0,"",0],[2027,2,"DEN",0,"(via CLE to CHI to BOS)",0],[2027,2,"LAC",0,"(via ATL to LAC)",0],[2027,2,"LAL",0,"If LAL does not convey 1st to UTA in 2027 or to BKN",0],[2027,2,"ORL",1,"More favorable of BOS and UTA then other to CHA (via BOS to ORL to BOS to ORL)",0],[2028,2,"CLE",0,"",0],[2028,2,"NYK",0,"",0],[2029,2,"UTA",0,"",0],[2030,2,"LAC",1,"Less favorable of LAC and UTA then other to CHA (via LAC to UTA)",0],[2031,2,"CLE",1,"More favorable of BOS and CLE then other to BOS (via CLE to ATL to BOS)",0],[2031,2,"UTA",0,"",0],[2032,2,"CLE",0,"",0],[2033,2,"UTA",0,"",0]]},"WAS":{"name":"Washington Wizards","color":"#e31837","capTotal":243265055,"apron":194462525,"tax":194462525,"hard":"first","players":[["Anthony Davis","PF",33,"23",58456566,58456566,0,2,"UFA","P1","","","VET-EXT","62786682",0],["Trae Young","PG",28,"3",49488300,49488300,0,4,"UFA","P3","12/15/2026","","FA","50478066,54437130,58396194",0],["AJ Dybantsa","SF",20,"4",14748000,14748000,0,4,"RFA","T2,T3","","","RK-1ST","15485760,16223040,20457254",0],["Alex Sarr","C",21,"20",12370680,12370680,0,2,"RFA","T1","","","RK-1ST","15611798",0],["Bilal Coulibaly","SF",22,"0",9240012,9240012,0,1,"RFA","","","","RK-1ST","",0],["Tre Johnson","SG",20,"12",8649600,8649600,0,3,"RFA","T1,T2","","","RK-1ST","9061680,11490211",0],["Deandre Ayton","C",28,"8",8104000,8104000,0,1,"UFA","","","","FA","",0],["Tre Mann","PG",25,"1",8000000,8000000,0,2,"UFA","T1","","","FA","8000000",0],["Khris Middleton","SF",35,"22",5591122,5591122,0,3,"UFA","N1,N2","12/15/2026","","S&T","5870678,6150234",0],["Bub Carrington","PG",21,"7",4900560,4900560,0,2,"RFA","T1","","","RK-1ST","7257730",0],["Will Riley","SF",20,"27",3688320,3688320,0,3,"RFA","T1,T2","","","RK-1ST","3864000,6155352",0],["Kyshawn George","SG",23,"18",3108000,3108000,0,2,"RFA","T1","","","RK-1ST","5435892",0],["Tristan Vukcevic","C",23,"00",3000000,3000000,0,2,"UFA","T1","","","ROS","3000000",0],["Justin Champagnie","SF",25,"9",2667944,2667944,0,2,"UFA","N0,T1","","","ROS","3005085",0],["Anthony Gill","PF",34,"16",2449421,2449421,0,1,"UFA","N0","12/15/2026","","FA","",0],["Reece Beekman","PG",25,"26",0,0,1,1,"","","11/16/2026","","TWO-WAY","",0],["Felix Okpara","C",22,"34",0,0,1,1,"","","","","TWO-WAY","",0],["Jamir Watkins","G",25,"5",0,0,1,1,"","","","","TWO-WAY","",0]],"dead":[],"picks":[[2027,1,"WAS",0,"",0],[2028,1,"WAS",1,"Most Favorable of WAS and BKN, PHI 9-30 and PHX (via BKN and WAS swap for PHX) or swap for MIL or POR",0],[2029,1,"POR",1,"Second most favorable of BOS, POR and MIL then others to POR (via BOS to POR; via MIL to POR; via POR to WAS)",0],[2029,1,"WAS",0,"",0],[2030,1,"WAS",1,"Most favorable of WAS, MEM and PHX",0],[2031,1,"WAS",0,"",0],[2032,1,"WAS",0,"",0],[2033,1,"WAS",0,"",0],[2027,2,"BOS",1,"More favorable of BKN and DAL to WAS then other to DET",0],[2027,2,"BKN",1,"More favorable of BKN and DAL to WAS then other to DET",0],[2027,2,"GSW",1,"Least favorable of GSW and PHX to WAS then other to PHI (via WAS to PHI)",0],[2028,2,"DEN",1,"If 31-33 \u00b7 If 34-60 (via SAS to SAC)",0],[2028,2,"LAL",1,"Less favorable of LAL and WAS then other to ORL (via LAL to WAS)",0],[2029,2,"LAL",0,"",0],[2030,2,"GSW",1,"GSW pick if GSW conveys 1st to WAS in 2030; WAS pick if GSW does not convey 1st to WAS in 2030",0],[2030,2,"PHX",0,"Least favor of PHX, POR and WAS then others to BOS and PHI (via PHI)",0],[2031,2,"MIA",1,"More favorable of MIA and IND (via MIA swap for IND; via UTH)",0],[2032,2,"UTA",0,"",0],[2033,2,"DAL",0,"",0],[2033,2,"WAS",0,"",0]]}}</script>
+<script>
+(function(){
+const CAP=164961000, TAX=200428000, AP1=209015000, AP2=221686000, FLOOR=148465000;
+const BAND1=9096000, BAND2=35170000, PAD=250000, ROOM_PAD=100000;
+const SEASON0=2026;
+const META={
+ ATL:['E','Southeast','#C8102E','#FDB927'],BOS:['E','Atlantic','#007A33','#FFFFFF'],BKN:['E','Atlantic','#111111','#FFFFFF'],CHA:['E','Southeast','#1D1160','#00788C'],
+ CHI:['E','Central','#CE1141','#111111'],CLE:['E','Central','#860038','#FDBB30'],DAL:['W','Southwest','#00538C','#B8C4CA'],DEN:['W','Northwest','#0E2240','#FEC524'],
+ DET:['E','Central','#C8102E','#1D42BA'],GSW:['W','Pacific','#1D428A','#FFC72C'],HOU:['W','Southwest','#CE1141','#C4CED4'],IND:['E','Central','#002D62','#FDBB30'],
+ LAC:['W','Pacific','#C8102E','#1D428A'],LAL:['W','Pacific','#552583','#FDB927'],MEM:['W','Southwest','#5D76A9','#12173F'],MIA:['E','Southeast','#98002E','#F9A01B'],
+ MIL:['E','Central','#00471B','#EEE1C6'],MIN:['W','Northwest','#0C2340','#78BE20'],NOP:['W','Southwest','#0C2340','#85714D'],NYK:['E','Atlantic','#006BB6','#F58426'],
+ OKC:['W','Northwest','#007AC1','#EF3B24'],ORL:['E','Southeast','#0077C0','#111111'],PHI:['E','Atlantic','#006BB6','#ED174C'],PHX:['W','Pacific','#1D1160','#E56020'],
+ POR:['W','Northwest','#E03A3E','#111111'],SAC:['W','Pacific','#5A2D81','#63727A'],SAS:['W','Southwest','#111111','#C4CED4'],TOR:['E','Atlantic','#CE1141','#111111'],
+ UTA:['W','Northwest','#4E008E','#FFFFFF'],WAS:['E','Southeast','#002B5C','#E31837']};
+const POSFIX={'Tacko Fall':'C','Caleb Love':'G','Rayan Rupert':'G'};
+const ORD=['','1st','2nd'];
+const TODAY=new Date();
+
+// ---------- parse ----------
+const RAW=JSON.parse(document.getElementById('nbadata').textContent);
+const T={};
+for(const [tri,r] of Object.entries(RAW)){
+  const m=META[tri]||['E','','#555555','#ffffff'];
+  const t={tri,name:r.name,conf:m[0]==='E'?'Eastern':'Western',div:m[1],color:m[2],color2:m[3],capTotal:r.capTotal,apron:r.apron,tax:r.tax,hard:r.hard||'',players:[],dead:[],picks:[]};
+  r.players.forEach((a,i)=>{
+    let pos=a[1]; if(!/^(PG|SG|SF|PF|C|G|F)$/.test(pos)) pos=POSFIX[a[0]]||'G';
+    const tr=a[10]?(()=>{const [mm,dd,yy]=a[10].split('/').map(Number);return new Date(yy,mm-1,dd);})():null;
+    const p={id:tri+':'+i,name:a[0],pos,age:a[2]&&a[2]>15?a[2]:null,num:a[3]||null,cap:a[4]||0,gtd:a[5]||0,two:!!a[6],yrs:a[7]||1,ex:a[8]||'',
+      opts:(a[9]||'').split(',').filter(Boolean),tr,flags:a[11]||'',type:a[12]||'',future:(a[13]||'').split(',').map(Number).filter(v=>v>=500000),unl:a[14]||0};
+    p.posg=/^(PG|SG|G)$/.test(pos)?'G':pos==='C'?'C':'F';
+    p.locked=!!(tr&&tr>TODAY);
+    p.ng=!p.two&&p.opts.includes('N0')&&p.gtd<p.cap;
+    t.players.push(p);
+  });
+  t.dead=(r.dead||[]).map(d=>({name:d[0].replace(/^Jr\.\s+/,''),amt:d[1]}));
+  t.picks=(r.picks||[]).map((k,i)=>({id:tri+':k'+i,year:k[0],round:k[1],orig:k[2],cond:!!k[3],note:k[4]||'',frozen:!!k[5],forfeit:/FORFEIT/i.test(k[4]||'')}));
+  t.std=t.players.filter(p=>!p.two).length; t.tw=t.players.filter(p=>p.two).length;
+  T[tri]=t;
+}
+const TRIS=Object.keys(T).sort((a,b)=>T[a].name.localeCompare(T[b].name));
+const byId=id=>{const [tri,rest]=id.split(':');const t=T[tri];if(!t)return null;if(rest[0]==='k')return t.picks.find(k=>k.id===id);return t.players[+rest];};
+
+// ---------- helpers ----------
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function money(v,opt){ if(v==null)return'—'; const neg=v<0; v=Math.abs(v); let s;
+  if(v>=1e6){s=(v/1e6).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');s='$'+s+'M';}
+  else if(v>=1000){s='$'+Math.round(v/1000)+'K';} else s='$'+v;
+  return (neg?'−':(opt&&opt.sign&&v>0?'+':''))+s; }
+const seasonLbl=i=>`${SEASON0+i}-${String(SEASON0+i+1).slice(-2)}`;
+const fmtDate=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+const plabel=p=>p.name+(p.num?` | #${p.num}`:'');
+const pickLabel=k=>`${k.year} ${ORD[k.round]}-round pick`+(k.orig?` (${k.orig})`:'');
+const TWO=['Trail Blazers'];
+function splitName(name){const two=TWO.find(n=>name.endsWith(n));const nick=two||name.split(' ').slice(-1)[0];return {city:name.slice(0,name.length-nick.length).trim(),nick};}
+function lum(hex){const h=hex.replace('#','');const c=[0,2,4].map(i=>{let v=parseInt(h.substr(i,2),16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+function optBadges(p){const out=[];p.opts.forEach(o=>{const k=o[0],i=+o.slice(1);if(k==='N'){if(i===0)return;out.push(`<span class="badge ng" title="Non-guaranteed in ${seasonLbl(i)}">NG ${seasonLbl(i)}</span>`);return;}
+  const lab={P:'Player opt.',T:'Team opt.',M:'Mutual opt.'}[k];if(lab)out.push(`<span class="badge opt" title="${lab} for ${seasonLbl(i)}">${k}O ${seasonLbl(i)}</span>`);});return out.join('');}
+
+// basketball tank jersey, back view
+function jerseySVG(t,p,uid){
+  const base=t.color||'#555', trim=t.color2&&t.color2.toLowerCase()!==base.toLowerCase()?t.color2:(lum(base)>.5?'#111111':'#ffffff');
+  const ink=lum(base)>.45?'#111111':'#ffffff';
+  const twill=Math.abs(lum(trim)-lum(base))>.08?trim:(ink==='#ffffff'?'#111111':'#ffffff');
+  const F="Graduate, 'Saira Condensed', Georgia, serif";
+  let plate,big,bigSize;
+  if(p){plate=(p.name.replace(/\s+(Jr\.|Sr\.|II|III|IV)$/,'').split(' ').slice(-1)[0]||'').toUpperCase();big=p.num||'';bigSize=big.length>1?70:78;}
+  else{const s=splitName(t.name);plate=s.city.toUpperCase();big=s.nick.toUpperCase();bigSize=Math.min(32,Math.floor(150/(big.length*.76)));}
+  const plateSize=Math.min(15,Math.floor(118/Math.max(1,plate.length*.72)));
+  const body="M70 10 L92 10 Q110 26 128 10 L150 10 Q152 44 180 64 L184 74 L180 208 Q110 216 40 208 L36 74 L40 64 Q68 44 70 10 Z";
+  const bigY=p?162:146;
+  const bigTxt=extra=>`<text x="110" y="${bigY}" text-anchor="middle" font-family="${F}" font-size="${bigSize}" ${extra}>${esc(big)}</text>`;
+  return `<svg viewBox="0 0 220 236" role="img" aria-label="${esc(p?plabel(p):t.name)} jersey">
+  <defs>
+    <clipPath id="c${uid}"><path d="${body}"/></clipPath>
+    <linearGradient id="s${uid}" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".3"/><stop offset=".25" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".07"/><stop offset=".75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>
+    <linearGradient id="v${uid}" y1="0" y2="1" x1="0" x2="0"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
+    <pattern id="m${uid}" width="3" height="3" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".55" fill="#000" fill-opacity=".1"/></pattern>
+    <path id="a${uid}" d="M56 76 Q110 58 164 76"/>
+  </defs>
+  <path d="M110 16 V8 a7 7 0 1 1 7 -7" fill="none" stroke="#9aa3ad" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M60 14 Q110 4 160 14" fill="none" stroke="#9aa3ad" stroke-width="2.6" stroke-linecap="round"/>
+  <g transform="translate(0,14)">
+    <g clip-path="url(#c${uid})">
+      <rect width="220" height="220" fill="${base}"/>
+      <path d="M36 70 L52 70 L50 214 L36 214 Z" fill="${trim}"/><path d="M168 70 L184 70 L184 214 L170 214 Z" fill="${trim}"/>
+      <path d="M53 70 L57 70 L55 214 L51 214 Z" fill="${ink}" opacity=".6"/><path d="M163 70 L167 70 L169 214 L165 214 Z" fill="${ink}" opacity=".6"/>
+      <rect width="220" height="220" fill="url(#m${uid})"/>
+      <path d="M88 60 Q82 140 90 212 M132 60 Q138 140 130 212" stroke="#000" stroke-opacity=".06" stroke-width="10" fill="none"/>
+      <rect width="220" height="220" fill="url(#s${uid})"/>
+      <rect width="220" height="220" fill="url(#v${uid})"/>
+    </g>
+    <path d="M92 10 Q110 26 128 10" fill="none" stroke="${trim}" stroke-width="6" stroke-linecap="round"/>
+    <path d="M70 10 Q68 44 40 64 M150 10 Q152 44 180 64" fill="none" stroke="${trim}" stroke-width="6" stroke-linecap="round"/>
+    <path d="M70 10 L92 10 M128 10 L150 10" stroke="${trim}" stroke-width="3"/>
+    <path d="${body}" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="1.4"/>
+    <text font-family="${F}" font-size="${plateSize}" letter-spacing="1.6" fill="${ink}" stroke="${twill}" stroke-width="1.1" paint-order="stroke"><textPath href="#a${uid}" startOffset="50%" text-anchor="middle">${esc(plate)}</textPath></text>
+    ${big?bigTxt(`fill="${twill}" stroke="${twill}" stroke-width="${p?10:5}" stroke-linejoin="round"`)+bigTxt(`fill="${ink}" stroke="${base}" stroke-width="${p?4:2}" stroke-linejoin="round" paint-order="stroke"`):''}
+  </g>
+</svg>`;}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),1800);}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+
+// ---------- state ----------
+const SAMPLE={a:'SAC',b:'MEM',find:[['a','SAC','Zach LaVine'],['b','MEM','Jerami Grant'],['b','MEM','Ty Jerome']]};
+function sampleState(){const s={a:SAMPLE.a,b:SAMPLE.b,items:[],sample:true};
+  SAMPLE.find.forEach(([side,tri,name])=>{const p=T[tri].players.find(x=>x.name===name);if(p)s.items.push({side,id:p.id});});return s;}
+let S=store.get('nba.state',null);
+if(!S||!T[S.a]||!T[S.b]||S.a===S.b) S=sampleState();
+S.items=(S.items||[]).filter(it=>{const x=byId(it.id);return x&&it.id.split(':')[0]===S[it.side];});
+S.ui=Object.assign({a:{tab:'roster',q:'',pos:'all'},b:{tab:'roster',q:'',pos:'all'}},S.ui||{});
+S.jersey=Object.assign({a:null,b:null},S.jersey||{});
+const other=s=>s==='a'?'b':'a';
+function inTrade(id){return S.items.find(it=>it.id===id);}
+function jerseyPlayer(side){let id=S.jersey[side];
+  if(!id||id.split(':')[0]!==S[side]||!inTrade(id)){const rest=S.items.filter(it=>it.side===side&&byId(it.id)&&byId(it.id).name);id=rest.length?rest[rest.length-1].id:null;}
+  const p=id&&byId(id);return p&&p.name?p:null;}
+function save(){store.set('nba.state',{a:S.a,b:S.b,items:S.items,sample:S.sample,ui:S.ui,jersey:S.jersey});}
+function toggle(side,id){
+  const x=byId(id); if(x&&!x.name&&(x.frozen||x.forfeit)) return;
+  const i=S.items.findIndex(it=>it.id===id);
+  if(i>=0)S.items.splice(i,1); else S.items.push({side,id});
+  if(i<0&&x&&x.name) S.jersey[side]=id;
+  else if(S.jersey[side]===id){const rest=S.items.filter(it=>it.side===side&&byId(it.id)&&byId(it.id).name);S.jersey[side]=rest.length?rest[rest.length-1].id:null;}
+  S.sample=false; render();
+}
+
+// ---------- rules ----------
+function maxIncoming(out){ if(out<=BAND1) return 2*out+PAD; if(out<=BAND2) return out+BAND1; return Math.round(1.25*out)+PAD; }
+function evalSide(side){
+  const t=T[S[side]], o=other(side);
+  const out=S.items.filter(it=>it.side===side).map(it=>byId(it.id)).filter(Boolean);
+  const inn=S.items.filter(it=>it.side===o).map(it=>byId(it.id)).filter(Boolean);
+  const pl=a=>a.filter(x=>x.name), std=a=>pl(a).filter(x=>!x.two);
+  const Sout=std(out).reduce((a,p)=>a+p.cap,0), Sin=std(inn).reduce((a,p)=>a+p.cap,0);
+  const Uout=std(out).reduce((a,p)=>a+p.cap+p.unl,0), Uin=std(inn).reduce((a,p)=>a+p.cap+p.unl,0);
+  const newTax=t.tax-Sout+Sin, newApron=t.apron-Uout+Uin, newCapTot=t.capTotal-Sout+Sin;
+  const newStd=t.std-std(out).length+std(inn).length;
+  const newTw=t.tw-pl(out).filter(p=>p.two).length+pl(inn).filter(p=>p.two).length;
+  const any=out.length||inn.length; const checks=[];
+  if(any){
+    if(newStd>15) checks.push(['bad',`Roster would have ${newStd} standard contracts (max 15).`]);
+    else if(newStd<14) checks.push(['warn',`Roster drops to ${newStd}; the team must sign a player within two weeks.`]);
+    else checks.push(['ok',`Roster ${newStd}/15.`]);
+    if(newTw>3) checks.push(['bad',`${newTw} two-way contracts (max 3).`]);
+    if(Sin>Sout){
+      if(newCapTot<=CAP+ROOM_PAD) checks.push(['ok',`Absorbs the extra salary with cap room.`]);
+      else if(newApron>AP1) checks.push(['bad',`Would sit ${money(newApron-AP1)} over the first apron, so it can't take back more salary than it sends (${money(Sin)} in, ${money(Sout)} out).`]);
+      else { const lim=maxIncoming(Sout);
+        if(Sin>lim) {const room=CAP-t.capTotal+Sout; checks.push(['bad',Sout?`Salary matching: sending ${money(Sout)} allows up to ${money(lim)} back, but this takes in ${money(Sin)}.`:room>0?`Takes on ${money(Sin)} without sending salary back but has only ${money(room)} of cap room.`:`Takes on ${money(Sin)} without sending salary back and has no cap room.`]);}
+        else checks.push(['ok',`Salary matches: ${money(Sin)} in for ${money(Sout)} out (limit ${money(lim)}).`]); }
+    } else if(Sin||Sout) checks.push(['ok',`Takes back no more salary than it sends out.`]);
+    else checks.push(['ok',`No salary changes hands.`]);
+    const salaried=std(out).filter(p=>p.cap>0).length;
+    if(salaried>=2&&newApron>AP2) checks.push(['bad',`Above the second apron, a team can't combine two or more salaries in one trade.`]);
+    if(t.hard==='first'&&newApron>AP1&&!checks.some(c=>c[0]==='bad'&&/first apron/.test(c[1]))) checks.push(['bad',`Hard-capped at the first apron this season; this puts it ${money(newApron-AP1)} over.`]);
+    if(t.hard==='second'&&newApron>AP2) checks.push(['bad',`Hard-capped at the second apron this season; this puts it ${money(newApron-AP2)} over.`]);
+    pl(out).forEach(p=>{
+      if(p.locked) checks.push(['bad',`${p.name} can't be traded until ${fmtDate(p.tr)} (recently signed).`]);
+      if(/ntc/.test(p.flags)) checks.push(['warn',`${p.name} has a no-trade clause and would have to approve.`]);
+      if(/veto/.test(p.flags)) checks.push(['warn',`${p.name} can veto trades this season (one-year deal with Bird rights).`]);
+    });
+    const taxTxt=newTax>TAX?`${money(newTax-TAX)} over the tax line`:`${money(TAX-newTax)} under the tax line`;
+    checks.push(['info',`Payroll ${money(newTax)}, ${taxTxt}.`]);
+    if(newTax<FLOOR) checks.push(['warn',`Below the $148.465M salary floor; the shortfall is paid to players at season's end.`]);
+  }
+  const legal=!checks.some(c=>c[0]==='bad');
+  return {t,out,inn,Sout,Sin,newTax,newApron,newCapTot,newStd,newTw,checks,legal,any};
+}
+function status(ap,tax){ if(ap>AP2) return 'Above 2nd apron'; if(ap>AP1) return 'Above 1st apron'; if(tax>TAX) return 'Taxpayer'; if(tax>CAP) return 'Over the cap'; return 'Under the cap'; }
+
+// ---------- team board ----------
+function teamOptions(sel,dis){
+  let h='';['Eastern','Western'].forEach(c=>{
+    const divs=[...new Set(TRIS.filter(x=>T[x].conf===c).map(x=>T[x].div))].sort();
+    divs.forEach(d=>{h+=`<optgroup label="${c} · ${d}">`;
+      TRIS.filter(x=>T[x].conf===c&&T[x].div===d).forEach(x=>{h+=`<option value="${x}"${x===sel?' selected':''}${x===dis?' disabled':''}>${esc(T[x].name)}</option>`;});
+      h+='</optgroup>';});
+  });return h;}
+function gauge(v){
+  const lo=130e6, hi=240e6, pct=x=>Math.max(0,Math.min(100,(x-lo)/(hi-lo)*100));
+  return `<div class="gauge" role="img" aria-label="Payroll ${money(v)}; cap ${money(CAP)}, tax ${money(TAX)}, first apron ${money(AP1)}, second apron ${money(AP2)}">
+    <div class="zone" style="left:${pct(TAX)}%;width:${pct(AP1)-pct(TAX)}%;background:var(--warn)"></div>
+    <div class="zone" style="left:${pct(AP1)}%;width:${pct(AP2)-pct(AP1)}%;background:var(--orange)"></div>
+    <div class="zone" style="left:${pct(AP2)}%;right:0;background:var(--bad)"></div>
+    <div class="fill${v>AP2?' over':''}" style="width:${pct(v)}%"></div>
+    <div class="tick" style="left:${pct(CAP)}%"></div><div class="tick t-tax" style="left:${pct(TAX)}%"></div><div class="tick t-a1" style="left:${pct(AP1)}%"></div><div class="tick t-a2" style="left:${pct(AP2)}%"></div></div>
+    <div class="gauge-legend"><span>cap 165.0</span><span>tax 200.4</span><span>1st 209.0</span><span>2nd 221.7</span></div>`;}
+function playerRow(p){
+  const sel=!!inTrade(p.id);
+  const b=[];
+  if(p.locked) b.push(`<span class="badge lock" title="Can't be traded until ${p.tr.toLocaleDateString('en-US')}">Tradable ${fmtDate(p.tr)}</span>`);
+  if(/ntc/.test(p.flags)) b.push(`<span class="badge cl">No-trade</span>`);
+  if(/veto/.test(p.flags)) b.push(`<span class="badge cl">Veto</span>`);
+  if(/inj/.test(p.flags)) b.push(`<span class="badge lock">Injured</span>`);
+  if(p.ng) b.push(`<span class="badge ng" title="Not fully guaranteed this season (${money(p.gtd)} guaranteed)">Non-guar.</span>`);
+  const right=p.two?`<div class="amt">Two-way</div><div class="term">No cap hit</div>`
+    :`<div class="amt">${money(p.cap)}</div><div class="term">${p.yrs} yr${p.yrs>1?'s':''}${p.ex?' · '+p.ex+" '"+String(SEASON0+p.yrs).slice(-2):''}</div>`;
+  return `<div class="row${sel?' sel':''}" data-id="${p.id}" role="button" tabindex="0" aria-pressed="${sel}">
+    <button class="add" type="button" tabindex="-1" aria-hidden="true">${sel?'✓':'+'}</button>
+    <div style="min-width:0;display:grid;gap:2px">
+      <div class="pname">${esc(p.name)}${p.num?`<span class="pnum"> | #${esc(p.num)}</span>`:''}</div>
+      <div class="pline"><span>${p.pos}${p.age?' · '+p.age:''}</span>${b.join('')}${optBadges(p)}</div>
+    </div>
+    <div class="pcap">${right}</div>
+  </div>`;}
+function pickRow(t,k){
+  const sel=!!inTrade(k.id), off=k.frozen||k.forfeit;
+  const note=k.forfeit?'Forfeited by league penalty':k.note.replace(/^\(|\)$/g,'');
+  return `<div class="row${sel?' sel':''}${off?' off':''}" data-id="${k.id}" role="button" tabindex="${off?-1:0}" aria-pressed="${sel}" aria-disabled="${off}">
+    <button class="add" type="button" tabindex="-1" aria-hidden="true">${off?'–':sel?'✓':'+'}</button>
+    <div style="min-width:0;display:grid;gap:2px"><div class="pname">${k.year} ${ORD[k.round]} round <span class="pnum">${k.orig===t.tri?'own':'via '+k.orig}</span></div>
+      <div class="pline">${k.frozen?'<span class="badge lock" title="Second-apron penalty: this pick cannot be traded">Frozen</span>':''}${k.forfeit?'<span class="badge cl">Forfeited</span>':''}${k.cond&&!k.forfeit?'<span class="badge opt">Protected / swap</span>':''}${note?`<span class="pnote">${esc(note)}</span>`:''}</div></div>
+    <div class="pcap"><div class="term">${k.year}</div></div></div>`;}
+function rackHTML(side,t,front){
+  const ps=S.items.filter(it=>it.side===side).map(it=>byId(it.id)).filter(x=>x&&x.name);
+  if(!front||!ps.length) return `<figure class="jersey"><div class="stall"><div class="hang front">${jerseySVG(t,null,side+'f')}</div></div>
+    <figcaption><b>${esc(t.name)}</b><span>Add a player to see his jersey</span></figcaption></figure>`;
+  const others=ps.filter(x=>x!==front).slice(-2).reverse();
+  const backs=others.map((x,i)=>`<button type="button" class="hang back ${i?'r':'l'}" data-front="${x.id}" aria-label="Show ${esc(plabel(x))}">${jerseySVG(t,x,side+'b'+i)}</button>`).join('');
+  const more=ps.length-1-others.length, idx=ps.indexOf(front)+1;
+  return `<figure class="jersey"><div class="stall">${backs}<div class="hang front">${jerseySVG(t,front,side+'f')}</div>${more>0?`<span class="more">+${more}</span>`:''}</div>
+    <figcaption><b>${esc(plabel(front))}</b><span>${front.pos} · ${front.two?'Two-way':money(front.cap)}</span></figcaption>
+    ${ps.length>1?`<div class="cycle"><button type="button" data-cyc="-1" aria-label="Previous player">‹</button><span>${idx} / ${ps.length}</span><button type="button" data-cyc="1" aria-label="Next player">›</button></div>`:''}</figure>`;
+}
+function renderTeam(side){
+  const el=document.getElementById('team-'+side), t=T[S[side]], ui=S.ui[side], ev=evalSide(side), jp=jerseyPlayer(side);
+  el.style.setProperty('--tc',t.color);
+  const wm=document.getElementById('wm-'+side); wm.style.setProperty('--wc',t.color); wm.firstElementChild.textContent=t.tri;
+  let body='';
+  if(ui.tab==='picks'){
+    const ks=t.picks.slice().sort((a,b)=>a.round-b.round||a.year-b.year);
+    body=[1,2].map(r=>{const a=ks.filter(k=>k.round===r);return a.length?`<div class="grp"><span>${ORD[r]} round · ${a.length}</span></div>`+a.map(k=>pickRow(t,k)).join(''):'';}).join('')||`<div class="empty">No picks on hand through 2033.</div>`;
+  } else if(ui.tab==='dead'){
+    body=t.dead.length?t.dead.map(d=>`<div class="row" style="cursor:default;grid-template-columns:minmax(0,1fr) auto"><div style="min-width:0"><div class="pname">${esc(d.name)}</div><div class="pline">Waived or stretched</div></div><div class="pcap"><div class="amt">${money(d.amt)}</div></div></div>`).join('')
+      :`<div class="empty">No dead money for 2026–27.</div>`;
+  } else {
+    const q=ui.q.trim().toLowerCase();
+    let ps=t.players.filter(p=>ui.tab==='two'?p.two:!p.two);
+    if(ui.pos!=='all') ps=ps.filter(p=>p.posg===ui.pos);
+    if(q) ps=ps.filter(p=>p.name.toLowerCase().includes(q));
+    const groups=[['G','Guards'],['F','Forwards'],['C','Centers']];
+    body=groups.map(([g,lab])=>{const arr=ps.filter(p=>p.posg===g).sort((a,b)=>b.cap-a.cap||a.name.localeCompare(b.name));if(!arr.length)return'';
+      const sum=arr.reduce((a,p)=>a+p.cap,0);
+      return `<div class="grp"><span>${lab} · ${arr.length}</span>${ui.tab==='roster'?`<span class="num">${money(sum)}</span>`:''}</div>`+arr.map(playerRow).join('');}).join('')||`<div class="empty">No players match.</div>`;
+  }
+  const filt=(ui.tab==='roster'||ui.tab==='two')?`<div class="filters">
+      <input class="search" id="q-${side}" type="search" placeholder="Search ${esc(t.name)}…" value="${esc(ui.q)}" aria-label="Search players">
+      <div class="chips" role="group" aria-label="Position">${['all','G','F','C'].map(x=>`<button type="button" class="chip" data-pos="${x}" aria-pressed="${ui.pos===x}">${x==='all'?'All':x}</button>`).join('')}</div></div>`:'';
+  const tax=ev.any?ev.newTax:t.tax, ap=ev.any?ev.newApron:t.apron, std=ev.any?ev.newStd:t.std, tw=ev.any?ev.newTw:t.tw;
+  const dTax=TAX-tax, dAp=AP1-ap;
+  el.innerHTML=`<div class="team-head">
+      <div class="pick-row"><span class="side-tag">Team ${side.toUpperCase()}</span>
+        <select class="team-select" id="sel-${side}" aria-label="Team ${side.toUpperCase()}">${teamOptions(S[side],S[other(side)])}</select></div>
+      <div class="head-body">
+      ${rackHTML(side,t,jp)}
+      <div class="head-info">
+      <div class="stats">
+        <div class="stat"><div class="k">Payroll</div><div class="v">${money(tax)}</div></div>
+        <div class="stat"><div class="k">${dTax>=0?'Under tax':'Over tax'}</div><div class="v ${dTax>=0?'pos':'neg'}">${money(Math.abs(dTax))}</div></div>
+        <div class="stat"><div class="k">${dAp>=0?'1st apron room':'Over 1st apron'}</div><div class="v ${dAp>=0?'':'neg'}">${money(Math.abs(dAp))}</div></div>
+        <div class="stat"><div class="k">Roster</div><div class="v">${std}/15<span class="pnum tw"> · ${tw} TW</span></div></div>
+      </div>
+      ${gauge(tax)}
+      <div class="meta">${ev.any?'After the trade. ':''}${status(ap,tax)} · ${t.conf} · ${t.div}${t.hard?` · <span class="pill-hard" title="Triggered by a move made this season">Hard cap: ${t.hard} apron</span>`:''}</div>
+      </div></div>
+    </div>
+    <div class="tabs" role="tablist">
+      ${[['roster','Roster',t.std],['two','Two-way',t.tw],['picks','Picks',t.picks.length],['dead','Dead money',t.dead.length]].map(([k,l,c])=>`<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${ui.tab===k}">${l}<span class="c">${c}</span></button>`).join('')}
+    </div>${filt}
+    <div class="list" id="list-${side}">${body}</div>`;
+}
+
+// ---------- tray ----------
+function renderSide(side){
+  const ev=evalSide(side), t=ev.t, o=other(side), el=document.getElementById('side-'+side);
+  const items=S.items.filter(it=>it.side===o).map(it=>{const x=byId(it.id);
+    if(!x.name) return `<div class="item"><div style="min-width:0"><div class="nm">${esc(pickLabel(x))}</div><div class="sm">${x.cond?'Protected or swap · ':''}Draft pick from ${S[o]}</div></div><div></div><button class="x" type="button" data-rm="${it.id}" aria-label="Remove">×</button></div>`;
+    const sm=[x.pos, x.two?'Two-way':`${x.yrs} yr${x.yrs>1?'s':''}`, x.locked?`tradable ${fmtDate(x.tr)}`:''].filter(Boolean).join(' · ');
+    return `<div class="item"><div style="min-width:0"><div class="nm">${esc(plabel(x))}</div><div class="sm">${esc(sm)}</div></div>
+      <div class="amt">${x.two?'—':money(x.cap)}</div>
+      <button class="x" type="button" data-rm="${it.id}" aria-label="Remove ${esc(x.name)}">×</button></div>`;}).join('');
+  const d=ev.newTax-t.tax;
+  el.innerHTML=`<h3><span class="sw" style="--tc:${t.color}"></span>${esc(t.name)} receive</h3>
+    <div class="recv">${items||`<div class="none">Nothing yet. Pick from the ${esc(T[S[o]].name)} board above.</div>`}</div>
+    <table class="ledger"><tbody>
+      <tr><td>Payroll now</td><td class="r">${money(t.tax)}</td></tr>
+      <tr><td>Salary going out</td><td class="r">${money(-ev.Sout)}</td></tr>
+      <tr><td>Salary coming in</td><td class="r">${money(ev.Sin,{sign:1})}</td></tr>
+      <tr class="tot"><td>Payroll after</td><td class="r">${money(ev.newTax)} <span class="${d>0?'delta-up':d<0?'delta-down':''}">(${d?money(d,{sign:1}):'±$0'})</span></td></tr>
+      <tr class="tot"><td>Apron salary after</td><td class="r${ev.newApron>AP1?' delta-up':''}">${money(ev.newApron)}</td></tr>
+    </tbody></table>
+    <ul class="checks">${ev.any?ev.checks.map(([k,m])=>`<li class="${k}"><span class="i">${k==='ok'?'✓':k==='warn'?'!':k==='info'?'·':'✕'}</span><span>${esc(m)}</span></li>`).join(''):''}</ul>`;
+  return ev;
+}
+function render(){
+  renderTeam('a');renderTeam('b');
+  const ea=renderSide('a'), eb=renderSide('b');
+  const v=document.getElementById('verdict'), sb=document.getElementById('scoreboard');
+  const hasA=S.items.some(i=>i.side==='a'), hasB=S.items.some(i=>i.side==='b');
+  let state='idle', msg;
+  if(!S.items.length) msg='Add players or picks';
+  else if(!hasA||!hasB) msg='Both teams must send something';
+  else if(ea.legal&&eb.legal){state='ok';msg='Trade approved';}
+  else {state='no';const bad=[!ea.legal&&ea.t.tri,!eb.legal&&eb.t.tri].filter(Boolean);msg='Blocked: '+bad.join(' & ')+(bad.length>1?' fail':' fails')+' the rules';}
+  v.className='verdict '+state; v.textContent=msg; sb.className='scoreboard '+state;
+  [['a',ea],['b',eb]].forEach(([s,ev])=>{const el=document.getElementById('sb-'+s);const tax=ev.any?ev.newTax:ev.t.tax, ap=ev.any?ev.newApron:ev.t.apron;
+    el.style.setProperty('--tc',ev.t.color);
+    el.innerHTML=`<div class="sb-tri"><i></i>${ev.t.tri}</div><div class="sb-val num${ev.any&&!ev.legal?' neg':''}">${money(tax)}</div><div class="sb-lbl">${status(ap,tax)}</div>`;});
+  const n=document.getElementById('notes');
+  n.innerHTML=S.sample?`<span><b>Example trade loaded.</b> Press Reset to start your own.</span>`:'<span>Salary-matching limits depend on which side of the first apron each team lands after the trade. Two-way players carry no cap hit.</span>';
+  renderSaved(); save(); if(typeof renderScout==='function') renderScout();
+}
+
+// ---------- events ----------
+document.addEventListener('click',e=>{
+  const rm=e.target.closest('[data-rm]'); if(rm){S.items=S.items.filter(it=>it.id!==rm.dataset.rm);S.sample=false;render();return;}
+  const team=e.target.closest('.team'); if(!team)return; const side=team.id.slice(-1);
+  const fr=e.target.closest('[data-front]'); if(fr){S.jersey[side]=fr.dataset.front;renderTeam(side);save();return;}
+  const cy=e.target.closest('[data-cyc]'); if(cy){const ps=S.items.filter(it=>it.side===side&&byId(it.id).name).map(it=>it.id);const f=jerseyPlayer(side);let i=ps.indexOf(f&&f.id);i=(i+ +cy.dataset.cyc+ps.length)%ps.length;S.jersey[side]=ps[i];renderTeam(side);save();return;}
+  const tab=e.target.closest('[data-tab]'); if(tab){S.ui[side].tab=tab.dataset.tab;S.ui[side].q='';renderTeam(side);save();return;}
+  const pos=e.target.closest('[data-pos]'); if(pos){S.ui[side].pos=pos.dataset.pos;renderTeam(side);save();return;}
+  const row=e.target.closest('.row[data-id]'); if(row){const l=document.getElementById('list-'+side);const sc=l.scrollTop;toggle(side,row.dataset.id);document.getElementById('list-'+side).scrollTop=sc;}
+});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.row[data-id]')){e.preventDefault();e.target.click();}});
+document.addEventListener('change',e=>{
+  const s=e.target.closest('.team-select'); if(s){const side=s.id.slice(-1);S[side]=s.value;S.items=S.items.filter(it=>it.id.split(':')[0]===S[it.side]);S.ui[side].q='';S.sample=false;render();}
+});
+document.addEventListener('input',e=>{const q=e.target.closest('.search');if(!q)return;const side=q.id.slice(-1);S.ui[side].q=q.value;
+  const pos=q.selectionStart;renderTeam(side);const n=document.getElementById('q-'+side);n.focus();try{n.setSelectionRange(pos,pos);}catch(_){} save();});
+
+function summary(){
+  const lines=['NBA Trade Machine — 2026-27'];
+  ['a','b'].forEach(side=>{const ev=evalSide(side);const t=ev.t;
+    lines.push('',`${t.name} receive:`);
+    const inn=S.items.filter(it=>it.side===other(side));
+    if(!inn.length)lines.push('  (nothing)');
+    inn.forEach(it=>{const x=byId(it.id);lines.push('  • '+(x.name?`${plabel(x)} (${x.pos}) ${x.two?'two-way':money(x.cap)}`:pickLabel(x)+(x.cond?' (protected/swap)':'')));});
+    lines.push(`  Payroll ${money(t.tax)} → ${money(ev.newTax)}${ev.legal?'':' — FAILS THE RULES'}`);});
+  return lines.join('\n');}
+document.getElementById('btn-copy').addEventListener('click',()=>{const txt=summary();
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>toast('Summary copied'),()=>showCopy(txt));}else showCopy(txt);});
+function showCopy(txt){const n=document.getElementById('notes');n.innerHTML=`<span>Copy the summary below:</span><textarea class="copybox" id="copybox" readonly>${esc(txt)}</textarea>`;const ta=document.getElementById('copybox');ta.focus();ta.select();}
+document.getElementById('btn-reset').addEventListener('click',()=>{S.items=[];S.sample=false;render();toast('Trade cleared');});
+
+// saved trades
+function renderSaved(){const list=store.get('nba.saved',[]);const box=document.getElementById('saved');box.hidden=!list.length;
+  document.getElementById('saved-list').innerHTML=list.map((s,i)=>`<div class="saved-item"><span><b>${esc(s.a)} ↔ ${esc(s.b)}</b> · ${esc(s.label)}</span><span style="display:flex;gap:6px"><button class="btn" type="button" data-load="${i}">Load</button><button class="btn" type="button" data-del="${i}">Delete</button></span></div>`).join('');}
+document.getElementById('btn-save').addEventListener('click',()=>{if(!S.items.length){toast('Add something to the trade first');return;}
+  const list=store.get('nba.saved',[]);const names=S.items.map(it=>{const x=byId(it.id);return x.name?x.name.split(' ').slice(-1)[0]:x.year+' R'+x.round;});
+  list.unshift({a:S.a,b:S.b,items:S.items,label:names.slice(0,4).join(', ')+(names.length>4?'…':'')});store.set('nba.saved',list.slice(0,20));renderSaved();toast('Trade saved in this browser');});
+document.getElementById('saved-list').addEventListener('click',e=>{const l=e.target.closest('[data-load]'),d=e.target.closest('[data-del]');const list=store.get('nba.saved',[]);
+  if(l){const s=list[+l.dataset.load];if(T[s.a]&&T[s.b]){S.a=s.a;S.b=s.b;S.items=s.items.filter(it=>byId(it.id));S.sample=false;render();toast('Trade loaded');window.scrollTo({top:0,behavior:'smooth'});}}
+  if(d){list.splice(+d.dataset.del,1);store.set('nba.saved',list);renderSaved();toast('Trade deleted');}});
+
+// ---------- scout's take (AI) ----------
+let sampleFn=null, scoutCtl=null, scoutKey=null, scoutData=null, scoutBusy=false, scoutOff=false;
+const tradeKey=()=>JSON.stringify([S.a,S.b,S.items.map(i=>[i.side,i.id])]);
+function describe(x){ if(!x.name) return `- ${pickLabel(x)}${x.cond?' (protected or swap: '+x.note+')':''}`;
+  if(x.two) return `- ${x.name}${x.num?' (#'+x.num+')':''}: ${x.pos}, age ${x.age??'?'}, two-way contract (no cap hit)`;
+  const opt=x.opts.filter(o=>/^[PTM]/.test(o)).map(o=>({P:'player',T:'team',M:'mutual'})[o[0]]+' option '+seasonLbl(+o.slice(1))).join(', ');
+  return `- ${x.name}${x.num?' (#'+x.num+')':''}: ${x.pos}, age ${x.age??'?'}, ${money(x.cap)} this season, ${x.yrs} season${x.yrs>1?'s':''} left${x.ex?' then '+x.ex:''}${opt?', '+opt:''}${x.future.length?', future salaries '+x.future.map(v=>money(v)).join(' / '):''}${x.locked?', NOT tradable until '+fmtDate(x.tr):''}`;}
+function teamContext(t){return t.players.filter(p=>!p.two).sort((a,b)=>b.cap-a.cap).slice(0,8).map(p=>`${p.name} (${p.pos}, ${p.age??'?'}, ${money(p.cap)})`).join('; ');}
+function scoutPrompt(){
+  const ea=evalSide('a'), eb=evalSide('b'), A=ea.t, B=eb.t;
+  const sends=s=>S.items.filter(i=>i.side===s).map(i=>describe(byId(i.id))).join('\n')||'- nothing';
+  const cap=ev=>`${ev.t.name}: payroll ${money(ev.t.tax)} -> ${money(ev.newTax)}, ${status(ev.newApron,ev.newTax)}, ${ev.legal?'trade-legal for them':'FAILS the trade rules for them'}`;
+  return `You are a sharp, fair NBA analyst grading a hypothetical trade for a fan-made trade simulator. Season: 2026-27. Salary cap $164.961M, tax line $200.428M, first apron $209.015M, second apron $221.686M.
+Treat the contract and cap data below as accurate and current. Use your general basketball knowledge about these players (quality, role, age curve, injury history) and the teams' situations, but do not state uncertain specifics as fact (for example current stats or who is a team captain). Judge basketball value first, then contracts, term, tax and apron consequences. Be candid: if one side gets fleeced, say so plainly. Keep it fun but grounded, written for regular fans.
+
+${A.name} SEND:
+${sends('a')}
+
+${B.name} SEND:
+${sends('b')}
+
+CAP RESULT
+${cap(ea)}
+${cap(eb)}
+
+CONTEXT (each team's highest-paid players before the trade)
+${A.name}: ${teamContext(A)}
+${B.name}: ${teamContext(B)}
+
+Reply with only JSON in exactly this shape:
+{"a":{"grade":"letter grade A+ to F","headline":"punchy summary, max 8 words","take":"2-3 sentences on why this is good or bad for ${A.name}"},"b":{"grade":"...","headline":"...","take":"2-3 sentences on why this is good or bad for ${B.name}"},"verdict":"one sentence on who wins the trade"}`;}
+const gclass=g=>{const c=String(g||'').trim()[0]?.toUpperCase();return c==='A'?'g-a':c==='B'?'g-b':c==='C'?'g-c':'g-d';};
+function renderScout(){
+  if(!sampleFn||scoutOff) return;
+  const box=document.getElementById('scout'), body=document.getElementById('scout-body'), btn=document.getElementById('btn-scout');
+  box.hidden=false;
+  const hasA=S.items.some(i=>i.side==='a'), hasB=S.items.some(i=>i.side==='b');
+  if(scoutBusy){btn.textContent='Stop';btn.disabled=false;return;}
+  btn.disabled=!(hasA&&hasB);
+  btn.textContent=scoutData&&scoutKey===tradeKey()?'Ask again':'Get the scouting report';
+  if(scoutData&&scoutKey===tradeKey()){
+    const card=s=>{const d=scoutData[s]||{};const t=T[S[s]];return `<div class="grade" style="--tc:${t.color}"><div class="gl ${gclass(d.grade)}">${esc(String(d.grade||'?').slice(0,2))}</div>
+      <div style="min-width:0"><div class="who">${esc(t.name)}</div><h4>${esc(d.headline||'')}</h4><p>${esc(d.take||'')}</p></div></div>`;};
+    body.innerHTML=`<div class="grades">${card('a')}${card('b')}</div>${scoutData.verdict?`<div class="scout-verdict">${esc(scoutData.verdict)}</div>`:''}`;
+  } else if(scoutData){ body.innerHTML=`<div class="scout-wait">The trade changed. Get a fresh report for this version.</div>`; }
+  else if(!(hasA&&hasB)){ body.innerHTML=''; }
+  else if(!body.querySelector('.scout-err')) body.innerHTML='';
+}
+async function runScout(){
+  const body=document.getElementById('scout-body');
+  if(scoutBusy){scoutCtl&&scoutCtl.abort();return;}
+  const key=tradeKey(); const again=scoutData&&scoutKey===key;
+  scoutBusy=true; scoutCtl=new AbortController(); renderScout();
+  body.innerHTML='<div class="scout-wait"><span class="ball"></span>The scouts are breaking down the deal. This usually takes 5 to 30 seconds.</div>';
+  try{
+    const data=await sampleFn.json(scoutPrompt(),{modelTier:'default',effort:'low',signal:scoutCtl.signal,cache:again?{refresh:true}:true});
+    if(!data||!data.a||!data.b) throw {code:'invalid_json'};
+    scoutData=data; scoutKey=key;
+  }catch(e){
+    const c=e&&(e.code||(e.name==='AbortError'?'cancelled':'upstream_error'));
+    if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(c)){scoutOff=true;document.getElementById('scout').hidden=true;scoutBusy=false;return;}
+    const msg=c==='cancelled'?'':c==='rate_limited'?(SCOUT_API?'The scouts are tapped out for now. Try again in a minute, or tomorrow if the daily limit is reached.':'Too many reports in a short time. Give it a minute and try again.')
+      :c==='invalid_json'?'The scouts gave a garbled report. Try again.':c==='session_expired'?'Sign in to Claude again to get a report.'
+      :c==='refused'?'The scouts passed on this one. Try a different trade.':'Something went wrong reaching the scouts. Try again.';
+    scoutData=null; body.innerHTML=msg?`<div class="scout-err">${esc(msg)}</div>`:'';
+  }
+  scoutBusy=false; renderScout();
+}
+document.getElementById('btn-scout').addEventListener('click',runScout);
+const SCOUT_API='/api/scout';
+(async()=>{try{
+  if(SCOUT_API){
+    sampleFn={json:async(prompt,o)=>{const r=await fetch(SCOUT_API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt}),signal:o&&o.signal});
+      const j=await r.json().catch(()=>null); if(!r.ok||!j||!j.result) throw {code:r.status===429?'rate_limited':(j&&j.code)||'upstream_error'}; return j.result;}};
+    renderScout(); return;
+  }
+  if(!window.claude||!window.claude.use) return; const s=await window.claude.use('sample'); if(s){sampleFn=s;renderScout();}
+}catch(_){}})();
+
+render();
+})();
+</script>
+
+</body>
+</html>
