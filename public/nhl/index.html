@@ -2292,10 +2292,15 @@ function scoutPrompt(){
   return `You are a sharp, fair NHL analyst grading a hypothetical trade for a fan-made trade simulator. Season: 2026-27, salary cap $104M.
 Treat the contract and cap data below as accurate and current. Use your general hockey knowledge about these players (quality, role, age curve, injury history) and the teams' situations, but do not state uncertain specifics as fact (for example who wears a letter, or a player's current stats). Judge hockey value first, then contracts, term and cap. Be candid: if one side gets fleeced, say so plainly. Keep it fun but grounded, written for regular fans.
 
-${A.name} SEND:
+THE TRADE (each team GETS exactly what the other team GIVES UP)
+${A.name} GET:
+${sends('b')}
+${A.name} GIVE UP:
 ${sends('a')}
 
-${B.name} SEND:
+${B.name} GET:
+${sends('a')}
+${B.name} GIVE UP:
 ${sends('b')}
 
 CAP RESULT
@@ -2305,6 +2310,13 @@ ${cap(eb)}
 CONTEXT (each team's highest-paid NHL players before the trade)
 ${A.name}: ${teamContext(A)}
 ${B.name}: ${teamContext(B)}
+
+HOW TO GRADE
+1. Talent first. The team that GETS the best player in the deal usually wins, especially a star in his prime. A star's big contract is the price of a star, not a burden.
+2. Then age, term, cost and cap consequences.
+3. If a team FAILS the rules above, say in one short sentence that the league would block it as built, but still grade the hockey value.
+4. Each take is only about that team: what IT gets and what IT gives up. Never say a team acquires a player it is giving up.
+5. The verdict's winner must have the better grade.
 
 Reply with only JSON in exactly this shape:
 {"a":{"grade":"letter grade A+ to F","headline":"punchy summary, max 8 words","take":"2-3 sentences on why this is good or bad for ${A.name}"},"b":{"grade":"...","headline":"...","take":"2-3 sentences on why this is good or bad for ${B.name}"},"verdict":"one sentence on who wins the trade"}`;}
