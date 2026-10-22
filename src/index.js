@@ -2,6 +2,8 @@
 // AI runs on Cloudflare Workers AI (free plan: 10,000 neurons/day, no billing; resets 00:00 UTC).
 const MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 const FALLBACK = "@cf/meta/llama-3.1-8b-instruct-fp8-fast";
+// TEMPORARY: lets the owner compare models. Remove after testing.
+const TRY_MODELS = ["@cf/openai/gpt-oss-120b", "@cf/openai/gpt-oss-20b", "@cf/moonshotai/kimi-k2.5", "@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"];
 const LEAGUES = ["NHL", "NBA"];
 const PROMPT_RE = new RegExp(`^You are a sharp, fair (${LEAGUES.join("|")}) analyst grading a hypothetical trade`);
 
@@ -76,14 +78,20 @@ async function scout(request, env) {
     { role: "user", content: prompt },
   ];
   const notes = [];
-  for (const model of [MODEL, FALLBACK]) {
+  const pick = TRY_MODELS.includes(body.model) ? [body.model] : [MODEL, FALLBACK];
+  for (const model of pick) {
     try {
-      const out = await env.AI.run(model, { messages, max_tokens: 900, temperature: 0.4 });
-      // Workers AI models answer in a few shapes: {response}, OpenAI-style {choices}, or {result:{response}}.
-      const text = out && (out.response ?? out.choices?.[0]?.message?.content ?? out.result?.response ?? out);
+      const t0 = Date.now();
+      const opts = { messages, max_tokens: 2500, temperature: 0.4 };
+      if (model.includes("gpt-oss")) opts.reasoning = { effort: "low" };
+      const out = await env.AI.run(model, opts);
+      // Workers AI models answer in a few shapes: {response}, OpenAI-style {choices}, Responses-style {output}, or {result:{response}}.
+      const outText = Array.isArray(out?.output) ? out.output.filter((o) => o.type === "message").flatMap((o) => o.content || []).map((c) => c.text || "").join("") : undefined;
+      const text = out && (out.response ?? out.choices?.[0]?.message?.content ?? outText ?? out.result?.response ?? out);
+      if (body.model) notes.push(`ms=${Date.now() - t0} usage=${JSON.stringify(out?.usage || null)}`);
       const data = extractJSON(text);
       if (data && data.a && data.b) return json({ result: clean(data), model, ...(notes.length ? { fallback: notes.join(" | ") } : {}) });
-      notes.push(`${model.split("/").pop()}: unusable output (${typeof text === "string" ? text.slice(0, 120) : JSON.stringify(text).slice(0, 120)})`);
+      notes.push(`${model.split("/").pop()}: unusable output (${typeof text === "string" ? text.slice(0, body.model ? 600 : 120) : JSON.stringify(text).slice(0, body.model ? 600 : 120)})`);
     } catch (e) {
       const msg = String((e && e.message) || e);
       if (/neuron|daily|quota|allocation/i.test(msg)) return json({ error: "Daily free AI limit reached", code: "rate_limited" }, 429);
