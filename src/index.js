@@ -75,17 +75,22 @@ async function scout(request, env) {
     { role: "system", content: `You grade hypothetical ${league} trades for fans. Reply with only one JSON object, no markdown, no extra text.` },
     { role: "user", content: prompt },
   ];
+  const notes = [];
   for (const model of [MODEL, FALLBACK]) {
     try {
-      const out = await env.AI.run(model, { messages, max_tokens: 700, temperature: 0.6 });
-      const data = extractJSON(out && (out.response ?? out));
-      if (data && data.a && data.b) return json({ result: clean(data), model });
+      const out = await env.AI.run(model, { messages, max_tokens: 900, temperature: 0.4 });
+      // Workers AI models answer in a few shapes: {response}, OpenAI-style {choices}, or {result:{response}}.
+      const text = out && (out.response ?? out.choices?.[0]?.message?.content ?? out.result?.response ?? out);
+      const data = extractJSON(text);
+      if (data && data.a && data.b) return json({ result: clean(data), model, ...(notes.length ? { fallback: notes.join(" | ") } : {}) });
+      notes.push(`${model.split("/").pop()}: unusable output (${typeof text === "string" ? text.slice(0, 120) : JSON.stringify(text).slice(0, 120)})`);
     } catch (e) {
       const msg = String((e && e.message) || e);
-      if (/limit|quota|neuron|429|capacity/i.test(msg)) return json({ error: "Daily free AI limit reached", code: "rate_limited" }, 429);
+      if (/neuron|daily|quota|allocation/i.test(msg)) return json({ error: "Daily free AI limit reached", code: "rate_limited" }, 429);
+      notes.push(`${model.split("/").pop()}: ${msg.slice(0, 160)}`);
     }
   }
-  return json({ error: "The AI did not return a usable report", code: "invalid_json" }, 502);
+  return json({ error: "The AI did not return a usable report", code: "invalid_json", notes }, 502);
 }
 
 export default {
