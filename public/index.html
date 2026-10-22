@@ -1,0 +1,2343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>NHL Trade Machine 2026-27</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Graduate&family=Saira+Condensed:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: rink-sheet tool — header strip with center red line & blue lines, two team boards side by side (stack on phone), trade tray + verdict beneath. */
+:root{
+  --ice:#eef3f7; --board:#ffffff; --board2:#f6f9fb; --ink:#0d1b2a; --muted:#5b6b7c; --line:#d5dee7;
+  --red:#c8102e; --blue:#1d4f9e; --blue-soft:#e3ecf8; --red-soft:#fbe7ea;
+  --good:#17784a; --good-soft:#e2f3ea; --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#c8102e; --bad-soft:#fbe7ea;
+  --shadow:0 1px 0 rgba(13,27,42,.04),0 6px 20px -12px rgba(13,27,42,.18);
+  --f-display:"Saira Condensed","Arial Narrow",Impact,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ice:#0a1118; --board:#111b25; --board2:#0e1720; --ink:#e4ebf2; --muted:#8c9cad; --line:#223241;
+  --red:#ff5468; --blue:#79a9ff; --blue-soft:#16263d; --red-soft:#3a1720;
+  --good:#4fc98e; --good-soft:#123326; --warn:#f2b350; --warn-soft:#3a2b10; --bad:#ff5c70; --bad-soft:#3d1720;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ice:#0a1118; --board:#111b25; --board2:#0e1720; --ink:#e4ebf2; --muted:#8c9cad; --line:#223241;
+  --red:#ff5468; --blue:#79a9ff; --blue-soft:#16263d; --red-soft:#3a1720;
+  --good:#4fc98e; --good-soft:#123326; --warn:#f2b350; --warn-soft:#3a2b10; --bad:#ff5c70; --bad-soft:#3d1720;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.7); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--ice);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:grid;gap:18px}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+/* team watermarks: giant faded team code on each side, in team colour, behind everything */
+:root{--wm-lift:0%;--wm-fill:.07;--wm-stroke:.22;--glow:.16;--slat:#e8edf1;--slat2:#d2dae1;
+  --sb-bg:#0b0f14;--sb-panel:#121820;--sb-line:#26303b;--sb-amber:#ffb23f;--sb-dim:#7d8894;--sb-green:#38e08a;--sb-red:#ff3b4e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--wm-lift:55%;--wm-fill:.06;--wm-stroke:.2;--glow:.22;--slat:#0e1821;--slat2:#1b2733}}
+:root[data-theme="dark"]{--wm-lift:55%;--wm-fill:.06;--wm-stroke:.2;--glow:.22;--slat:#0e1821;--slat2:#1b2733}
+.wm{position:fixed;top:0;bottom:0;width:50vw;z-index:0;pointer-events:none;overflow:hidden;display:flex;align-items:center;
+  --wcl:color-mix(in srgb,var(--wc,#888),white var(--wm-lift))}
+.wm-a{left:0;justify-content:flex-start;background:radial-gradient(ellipse 60% 70% at 0% 50%,color-mix(in srgb,var(--wcl) calc(var(--glow)*100%),transparent),transparent 70%)}
+.wm-b{right:0;justify-content:flex-end;background:radial-gradient(ellipse 60% 70% at 100% 50%,color-mix(in srgb,var(--wcl) calc(var(--glow)*100%),transparent),transparent 70%)}
+.wm span{font-family:var(--f-display);font-weight:800;line-height:.8;letter-spacing:.02em;white-space:nowrap;writing-mode:vertical-rl;
+  font-size:clamp(140px,min(38vh,26vw),420px);color:color-mix(in srgb,var(--wcl) calc(var(--wm-fill)*100%),transparent);
+  -webkit-text-stroke:2px color-mix(in srgb,var(--wcl) calc(var(--wm-stroke)*100%),transparent);transition:color .4s,-webkit-text-stroke-color .4s}
+.wm-a span{transform:rotate(180deg);margin-left:-.06em}
+.wm-b span{margin-right:-.06em}
+.wrap{position:relative;z-index:1}
+.team,.tray,.saved{background:color-mix(in srgb,var(--board) 86%,transparent)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
+/* header */
+.top{position:relative;display:grid;gap:10px;padding-block:6px 14px}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:
+  linear-gradient(90deg,transparent 0 22%,var(--blue) 22% 23.2%,transparent 23.2% 49.3%,var(--red) 49.3% 50.7%,transparent 50.7% 76.8%,var(--blue) 76.8% 78%,transparent 78%),var(--line);background-size:100% 3px;opacity:.9}
+.top-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,44px);line-height:.95;letter-spacing:.01em;margin:0;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--red)}
+.sub{color:var(--muted);margin:0;max-width:62ch}
+.facts{display:flex;flex-wrap:wrap;gap:6px}
+.fact{border:1px solid var(--line);background:var(--board);border-radius:999px;padding:3px 10px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.fact b{color:var(--ink);font-family:var(--f-num);font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line);background:var(--board);border-radius:8px;padding:7px 12px;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.btn:hover{border-color:var(--blue)}
+.btn.primary{background:var(--ink);color:var(--board);border-color:var(--ink)}
+.btn.primary:hover{opacity:.9}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* boards */
+.boards{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media (max-width:860px){.boards{grid-template-columns:1fr}}
+.team{background:var(--board);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:0;display:grid;overflow:hidden}
+.team-head{display:grid;gap:10px;padding:14px 14px 12px;border-top:5px solid var(--tc,var(--line))}
+.pick-row{display:flex;gap:10px;align-items:center}
+.side-tag{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);flex:none}
+.team-select{flex:1;min-width:0;border:1px solid var(--line);background:var(--board2);border-radius:8px;padding:8px 10px;font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.02em}
+.meta{font-size:12.5px;color:var(--muted)}
+.head-body{display:grid;grid-template-columns:clamp(118px,30%,170px) minmax(0,1fr);gap:14px;align-items:start}
+.head-info{display:grid;gap:8px;min-width:0}
+/* locker stall rack */
+.jersey{margin:0;display:grid;gap:6px;justify-items:center;text-align:center;min-width:0}
+.stall{position:relative;width:100%;aspect-ratio:1/1.02;max-width:100%;border-radius:6px 6px 2px 2px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,var(--slat) 0 14px,var(--slat2) 14px 15px),var(--board2);
+  box-shadow:inset 0 10px 18px -12px rgba(0,0,0,.45),inset 0 -1px 0 var(--line)}
+.stall::before{content:"";position:absolute;left:6%;right:6%;top:12px;height:4px;border-radius:2px;z-index:0;
+  background:linear-gradient(180deg,#d9dee3,#8d969f 60%,#5f6870);box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.hang{position:absolute;top:2px;width:76%;left:12%;border:0;padding:0;background:none;cursor:pointer;transition:transform .25s ease,filter .25s ease}
+.hang svg{width:100%;height:auto;display:block;filter:drop-shadow(0 5px 6px rgba(0,0,0,.3))}
+.hang.front{z-index:3;cursor:default}
+.hang.back{z-index:1;filter:brightness(.82) saturate(.9)}
+.hang.back.l{transform:translateX(-27%) scale(.84) rotate(-4deg)}
+.hang.back.r{transform:translateX(27%) scale(.84) rotate(4deg)}
+.hang.back:hover{filter:none}
+.more{position:absolute;right:6px;bottom:6px;z-index:4;background:var(--ink);color:var(--board);font-weight:700;font-size:11px;border-radius:999px;padding:1px 7px}
+.jersey figcaption{display:grid;gap:1px;font-size:12.5px;line-height:1.25;min-width:0;max-width:100%}
+.jersey figcaption b{font-weight:700;font-size:13.5px;overflow-wrap:anywhere}
+.jersey figcaption span{color:var(--muted)}
+.cycle{display:flex;align-items:center;gap:6px;justify-content:center;font-family:var(--f-num);font-size:11.5px;color:var(--muted)}
+.cycle button{border:1px solid var(--line);background:var(--board);border-radius:50%;width:22px;height:22px;line-height:1;cursor:pointer;padding:0;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.hang{transition:none}}
+.pnum{font-family:var(--f-num);font-weight:500;font-size:.88em;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:var(--board2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.stat .v{font-family:var(--f-num);font-weight:600;font-size:15px;white-space:nowrap}
+.stat .v.neg{color:var(--bad)}
+.gauge{position:relative;height:14px;border-radius:4px;background:var(--board2);border:1px solid var(--line);overflow:hidden}
+.gauge .fill{position:absolute;inset:0 auto 0 0;background:var(--blue);opacity:.85}
+.gauge .fill.over{background:var(--bad)}
+.gauge .tick{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--red)}
+.gauge .tick.floor{background:var(--muted);width:1px}
+.gauge-legend{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--f-num)}
+.tabs{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--board2);overflow-x:auto}
+.tab{flex:1;border:0;background:transparent;padding:9px 8px;font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+.tab .c{font-family:var(--f-num);font-weight:500;font-size:11px;margin-left:4px;color:var(--muted)}
+.filters{display:flex;gap:8px;padding:10px 14px;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:140px;border:1px solid var(--line);background:var(--board2);border-radius:8px;padding:6px 10px;font-size:14px}
+.chips{display:flex;gap:4px}
+.chip{border:1px solid var(--line);background:var(--board);border-radius:6px;padding:4px 9px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--board);border-color:var(--ink)}
+.list{max-height:560px;overflow-y:auto;border-top:1px solid var(--line)}
+.grp{position:sticky;top:0;z-index:1;background:var(--board2);border-bottom:1px solid var(--line);padding:5px 14px;font-family:var(--f-display);font-weight:700;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:var(--board2)}
+.row.sel{background:var(--blue-soft)}
+/* faceoff-dot add button */
+.add{width:26px;height:26px;border-radius:50%;border:2px solid color-mix(in srgb,var(--red) 70%,transparent);background:var(--board);display:grid;place-items:center;font-weight:700;font-size:15px;line-height:1;color:var(--red);cursor:pointer;padding:0;position:relative}
+.add::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid color-mix(in srgb,var(--red) 25%,transparent)}
+.row:hover .add{background:var(--red-soft)}
+.row.sel .add{background:var(--red);border-color:var(--red);color:#fff}
+.pname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pline{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12.5px;color:var(--muted);align-items:center}
+.pcap{text-align:right}
+.pcap .amt{font-family:var(--f-num);font-weight:600;font-size:14.5px}
+.pcap .term{font-size:12px;color:var(--muted);font-family:var(--f-num)}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.04em;border-radius:4px;padding:1px 5px;border:1px solid var(--line);color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.badge.cl{border-color:var(--red);color:var(--red)}
+.badge.inj{background:var(--warn-soft);border-color:transparent;color:var(--warn)}
+.badge.elc{background:var(--blue-soft);border-color:transparent;color:var(--blue)}
+.badge.ret{background:var(--red-soft);border-color:transparent;color:var(--red)}
+.empty{padding:24px 14px;color:var(--muted);text-align:center}
+.dead{padding:4px 0}
+
+/* scout's take */
+.scout{margin:0 12px 12px;border:1px solid var(--line);border-radius:10px;background:var(--board2);display:grid;gap:0;overflow:hidden}
+.scout-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px}
+.scout-head h3{margin:0;font-family:var(--f-display);font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.06em}
+.scout-note{font-size:12.5px;color:var(--muted)}
+.scout-body:empty{display:none}
+.scout-body{border-top:1px solid var(--line);padding:12px 14px;display:grid;gap:12px}
+.scout-wait{color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
+.puck{width:14px;height:6px;border-radius:50%;background:var(--ink);animation:slide 1s ease-in-out infinite alternate}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(26px)}}
+@media (prefers-reduced-motion:reduce){.puck{animation:none}}
+.grades{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.grades{grid-template-columns:1fr}}
+.grade{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;background:var(--board);border:1px solid var(--line);border-radius:8px;padding:12px;border-top:4px solid var(--tc)}
+.gl{font-family:Graduate,var(--f-display);font-size:34px;line-height:1;min-width:58px;text-align:center;padding:8px 4px;border-radius:6px;background:var(--gbg);color:var(--gfg)}
+.grade h4{margin:0 0 4px;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.02em;text-wrap:balance}
+.grade .who{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.grade p{margin:4px 0 0;font-size:14px;line-height:1.5}
+.g-a{--gbg:var(--good-soft);--gfg:var(--good)} .g-b{--gbg:var(--blue-soft);--gfg:var(--blue)} .g-c{--gbg:var(--warn-soft);--gfg:var(--warn)} .g-d{--gbg:var(--bad-soft);--gfg:var(--bad)}
+.scout-verdict{font-weight:600;font-size:14.5px;border-left:3px solid var(--red);padding-left:10px}
+.scout-err{color:var(--bad);font-size:14px}
+
+/* trade tray */
+.tray{background:var(--board);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);display:grid;min-width:0}
+/* scoreboard verdict — deliberately dark in both themes, like an arena board */
+.scoreboard{margin:12px;border-radius:10px;background:var(--sb-bg);border:3px solid var(--sb-line);box-shadow:inset 0 0 0 1px #000,0 8px 18px -10px rgba(0,0,0,.6);
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;color:#e9eef3;overflow:hidden}
+.sb-team{display:grid;gap:2px;padding:12px 14px;justify-items:center;text-align:center;background:var(--sb-panel);min-width:0}
+.sb-tri{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.14em;color:#fff;display:flex;align-items:center;gap:8px}
+.sb-tri i{width:10px;height:10px;border-radius:2px;background:var(--tc)}
+.sb-val{font-family:var(--f-num);font-weight:600;font-size:clamp(20px,3.4vw,30px);color:var(--sb-amber);text-shadow:0 0 10px color-mix(in srgb,var(--sb-amber) 55%,transparent);letter-spacing:.02em;white-space:nowrap}
+.sb-val.neg{color:var(--sb-red);text-shadow:0 0 10px color-mix(in srgb,var(--sb-red) 55%,transparent)}
+.sb-lbl{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--sb-dim);font-weight:600}
+.sb-mid{display:grid;justify-items:center;align-content:center;gap:6px;padding:10px 16px;border-inline:2px solid var(--sb-line);min-width:132px}
+.sb-mid h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:13px;letter-spacing:.22em;color:var(--sb-dim);text-transform:uppercase}
+.lamp{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#3b444e,#1a2027);box-shadow:inset 0 -3px 6px rgba(0,0,0,.6)}
+.verdict{font-family:var(--f-display);font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;text-align:center;color:var(--sb-dim);max-width:16ch;line-height:1.1}
+.verdict.ok{color:var(--sb-green)} .verdict.no{color:var(--sb-red)}
+.scoreboard.ok .lamp{background:radial-gradient(circle at 40% 35%,#b9ffd8,var(--sb-green) 45%,#0f7a45);box-shadow:0 0 18px var(--sb-green)}
+.scoreboard.no .lamp{background:radial-gradient(circle at 40% 35%,#ffd0d5,var(--sb-red) 45%,#8e0f1d);box-shadow:0 0 22px var(--sb-red);animation:goal 1.2s ease-in-out infinite}
+@keyframes goal{50%{box-shadow:0 0 6px var(--sb-red)}}
+@media (prefers-reduced-motion:reduce){.scoreboard.no .lamp{animation:none}}
+@media (max-width:560px){.scoreboard{grid-template-columns:1fr 1fr}.sb-mid{grid-column:1/-1;grid-row:1;border-inline:0;border-bottom:2px solid var(--sb-line);grid-auto-flow:column;min-width:0}}
+.sides{display:grid;grid-template-columns:1fr 1fr}
+@media (max-width:860px){.sides{grid-template-columns:1fr}}
+.side{padding:14px;display:grid;gap:12px;align-content:start;min-width:0}
+.side+.side{border-left:1px solid var(--line)}
+@media (max-width:860px){.side+.side{border-left:0;border-top:1px solid var(--line)}}
+.side h3{margin:0;font-family:var(--f-display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.04em;display:flex;gap:8px;align-items:center}
+.sw{width:12px;height:12px;border-radius:3px;background:var(--tc);flex:none;border:1px solid var(--line)}
+.recv{display:grid;gap:6px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--board2)}
+.item .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .sm{font-size:12px;color:var(--muted)}
+.item .amt{font-family:var(--f-num);font-weight:600;font-size:14px;text-align:right;white-space:nowrap}
+.item select{border:1px solid var(--line);background:var(--board);border-radius:6px;padding:2px 4px;font-size:12.5px}
+.x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px}
+.x:hover{color:var(--bad)}
+.none{color:var(--muted);font-size:14px;border:1px dashed var(--line);border-radius:8px;padding:10px;text-align:center}
+.ledger{width:100%;border-collapse:collapse;font-size:13.5px}
+.ledger td{padding:4px 0;border-bottom:1px solid var(--line)}
+.ledger td:first-child{color:var(--muted)}
+.ledger td.r{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ledger tr.tot td{font-weight:700;color:var(--ink);border-bottom:0}
+.delta-up{color:var(--bad)} .delta-down{color:var(--good)}
+.checks{display:grid;gap:5px;margin:0;padding:0;list-style:none;font-size:13.5px}
+.checks li{display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start}
+.checks .i{font-weight:800;text-align:center}
+.checks .ok .i{color:var(--good)} .checks .warn .i{color:var(--warn)} .checks .bad .i{color:var(--bad)}
+.checks .bad{color:var(--bad)}
+.notes{padding:12px 14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+.saved{background:var(--board);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:8px}
+.saved h2{margin:0;font-family:var(--f-display);font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.saved-list{display:grid;gap:6px}
+.saved-item{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--board2);flex-wrap:wrap}
+.saved-item span{min-width:0;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--board);padding:8px 14px;border-radius:8px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+.foot{font-size:12.5px;color:var(--muted)}
+.foot a{color:var(--blue)}
+textarea.copybox{width:100%;min-height:120px;border:1px solid var(--line);border-radius:8px;background:var(--board2);padding:8px;font-family:var(--f-num);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="wm wm-a" id="wm-a" aria-hidden="true"><span></span></div>
+<div class="wm wm-b" id="wm-b" aria-hidden="true"><span></span></div>
+<div class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div style="display:grid;gap:6px;min-width:0">
+        <h1>NHL Trade <span>Machine</span></h1>
+        <p class="sub">Build a trade between any two clubs and check it against the 2026–27 salary cap. Click a player or pick to move him, set retained salary, and read each team's cap verdict below.</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btn-copy" type="button">Copy summary</button>
+        <button class="btn" id="btn-save" type="button">Save trade</button>
+        <button class="btn" id="btn-reset" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="facts">
+      <span class="fact">Upper limit <b>$104.0M</b></span>
+      <span class="fact">Lower limit <b>$76.9M</b></span>
+      <span class="fact">Max player cap hit <b>$20.8M</b></span>
+      <span class="fact">Max retention <b>50%</b> · 3 per club</span>
+      <span class="fact">Cap data <b>Oct 21, 2026</b></span>
+    </div>
+  </header>
+
+  <div class="boards">
+    <section class="team" id="team-a" aria-label="Team A"></section>
+    <section class="team" id="team-b" aria-label="Team B"></section>
+  </div>
+
+  <section class="tray" aria-label="Trade">
+    <div class="scoreboard" id="scoreboard">
+      <div class="sb-team" id="sb-a"></div>
+      <div class="sb-mid"><h2>The Trade</h2><span class="lamp" aria-hidden="true"></span><span id="verdict" class="verdict" role="status">Add players or picks</span></div>
+      <div class="sb-team" id="sb-b"></div>
+    </div>
+    <div class="scout" id="scout" hidden>
+      <div class="scout-head">
+        <div style="display:grid;gap:2px;min-width:0"><h3>Scout's Take</h3><span class="scout-note">An AI opinion on who wins the deal. Uses your Claude account.</span></div>
+        <button class="btn primary" id="btn-scout" type="button">Get the scouting report</button>
+      </div>
+      <div class="scout-body" id="scout-body" aria-live="polite"></div>
+    </div>
+    <div class="sides">
+      <div class="side" id="side-a"></div>
+      <div class="side" id="side-b"></div>
+    </div>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <section class="saved" id="saved" hidden>
+    <h2>My Trades</h2>
+    <div class="saved-list" id="saved-list"></div>
+  </section>
+
+  <p class="foot">2026–27 cap hits, contract terms, clauses, retained salary, buyouts and draft picks (2027–2029) pulled from CapWages on Oct 21, 2026. Team cap totals and cap space use CapWages' figures, which already account for LTIR relief. Players on LTIR or season-ending IR carry no cap change when moved; players in the AHL, junior or on loan are assumed to stay in the minors (no cap change). This tool checks cap, roster size, contract count and retention limits; it does not model waivers, the bonus cushion, or trade-list specifics for modified no-trade clauses.</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="text/plain" id="capdata">#ANA|Anaheim Ducks|W|Pacific|#F47A38|100706711|3293228|3973228|23|44
+Leo Carlsson|C|21|||18000000||5|U
+Cutter Gauthier|LW|22|||13500000||6|U
+Mikael Granlund|C|34|||7000000||2|U|M-NTC
+Alex Killorn|LW|37|||6250000||1|U|M-NTC
+Frank Vatrano|RW|32|||4571189||2|U|M-NTC
+A.J. Greer|LW|29|||4250000||4|U|M-NTC
+Ryan Poehling|C|27||I|3750000||4|U
+Jeff Malott|LW|30|||1850000||3|U
+Nikita Klepov|RW|18|||1075000||3|R||ew
+Roger McQueen|C|20|||1075000||3|R||ew
+Beckett Sennecke|RW|20|||953750||2|R||ew
+Judd Caulfield|RW|25|||875000||2|U
+Sam Colangelo|RW|24|||850000||1|G6
+Nikita Nesterenko|C|25|||837500||1|RA
+Tim Washe|C|25|||812500||1|G6|||2250000x4
+Jackson LaCombe|D|25|||9000000||8|U
+Pavel Mintyukov|D|22|||7200000||5|U
+Nick Jensen|D|36|||2250000||2|U
+Ian Moore|D|24||I|1150000||2|RA
+Drew Helleson|D|25|||1100000||1|RA
+Tyson Hinds|D|23|||900000||2|G6
+Tristan Luneau|D|22|||865000||1|R||ew|7200000x6
+Noah Warren|D|22|||865000||1|R||ew
+Lukas Dostal|G|26|||6500000||4|U
+Ville Husso|G|31|||2200000||1|U
+Troy Terry|RW|29||L|7000000||4|U|M-NTC
+Marcus Nordmark|LW|18|N|J|1075000||3|R||ew
+Cruz Lucius|RW|22|N||1050000||2|R||ew
+Ethan Procyszyn|C|20|N||1040000||3|R||ew
+Herman Traff|RW|20|N||990000||3|R||ew
+Lucas Pettersson|C|20|N||962700||3|R||ew
+Yegor Sidorov|RW|22|N||940000||1|R||ew
+Coulson Pitre|RW|21|N||933334||1|R||ew
+Nico Myatovic|LW|21|N||896667||1|R||ew
+Anton Wahlberg|C|21|N||893333||2|R||ew
+Nathan Gaucher|C|22|N||886667||1|R||e
+James Hamblin|LW|27|N||875000||2|U
+Sean Farrell|C|24|N||850000||1|G6
+Konnor Smith|D|21|N||955000||2|R||ew
+Stian Solberg|D|20|N||941667||3|R||ew
+Jett Woo|D|26|N||875000||2|U
+Corey Schueneman|D|31|N||875000||2|U
+Travis Mitchell|D|26|N||850000||1|U
+Laurent Brossoit|G|33|N||1100000||1|U
+Tomas Suchanek|G|23|N||945000||1|R10||ew
+Damian Clara|G|21|N||934167||2|R||ew
+@271,272,275,276,277,281,282,283,284,285,286,287,272STL,291,292,293,294,295,296,297,272DET,277CGY
+#BOS|Boston Bruins|E|Atlantic|#FFB81C|97547084|6452916|0|23|43
+David Pastrnak|RW|30|||11250000||5|U|NMC
+Elias Lindholm|C|31|||7750000||5|U|NMC
+JJ Peterka|RW|24|||7700000||4|U
+Casey Mittelstadt|C|27|||5750000||1|U
+Morgan Geekie|C|28|||5500000||5|U|NTC
+Pavel Zacha|C|29|||4750000||1|U|M-NTC
+Tanner Jeannot|LW|29|||3400000||4|U|NTC
+Sean Kuraly|C|33|||1850000||1|U
+Mark Kastelic|C|27|||1566667||2|U
+James Hagens|C|19|||986250||2|R10||ew
+Marat Khusnutdinov|C|24|||925000||1|RA|||3950000x3
+Fraser Minten|C|22|||879167||1|R||ew|7200000x7
+Matthew Poitras|C|22|||850000||1|R
+Charlie McAvoy|D|28|||9500000||4|U|NMC
+Hampus Lindholm|D|32|||6500000||4|U|NTC, NMC
+Nikita Zadorov|D|31|||5000000||4|U|M-NTC
+Will Borgen|D|29|||4100000||4|U|M-NTC
+Mason Lohrei|D|25|||3200000||1|RA
+Connor Clifton|D|31|||2250000||2|U
+Jonathan Aspirot|D|27|||887500||2|U
+Frederic Brunet|D|23|||875000||2|R
+Jeremy Swayman|G|27|||8250000||6|U|NMC
+Michael DiPietro|G|27|||812500||1|U
+Attilio Biasca|C|23|N||980000||2|R||w
+Dans Locmelis|C|22|N||960000||2|R||ew
+Lukas Reichel|LW|24|N||950000||1|RA
+Kalle Vaisanen|LW|23|N||938333||1|R||ew
+Brendan Gaunce|C|32|N||875000||2|U
+Brian Halonen|LW|27|N||875000||2|U
+Riley Duran|C|24|N||850000||1|G6||w
+Navrin Mutter|LW|25|N||850000||1|G6
+Ivan Ivan|C|24|N||850000||1|RA||w
+Alex Steeves|C|26|N||1625000||2|U
+Michael Eyssimont|C|30|N||1450000||1|U
+Henri Jokiharju|D|27|N||3000000||2|U
+Loke Johansson|D|20|N||928333||3|R||ew
+Billy Sweezey|D|30|N||850000||1|U
+Jordan Harris|D|26|N||850000||1|RA
+Maxence Guenette|D|25|N||850000||1|G6
+Max Lundgren|G|24|N||952500||1|R||ew
+Luke Cavallin|G|25|N||850000||1|RA||w
+Simon Zajicek|G|25|N||850000||1|RA||w
+Jiri Patera|G|27|N||850000||1|U
+$Brandon Carlo|retained salary|615000
+$Henri Jokiharju|buried|1775000
+$Alex Steeves|buried|400000
+$Michael Eyssimont|buried|225000
+@271,274,276,277,281,282,284,285,286,287,291,292,293,294,295,296,297,281TOR,274WPG,284NYR
+#BUF|Buffalo Sabres|E|Atlantic|#003087|102416766|1583234|0|22|45
+Josh Norris|C|27|||7950000||4|U|M-NTC
+Zach Benson|LW|21|||7500000||7|U
+Tage Thompson|C|28|||7142857||4|U|M-NTC
+Josh Doan|RW|24|||6950000||7|U
+Ryan McLeod|C|27|||5000000||3|U
+Jason Zucker|LW|34|||4750000||1|U|M-NTC
+Peyton Krebs|C|25|||4500000||4|U
+Jack Quinn|RW|25|||3375000||1|RA
+Beck Malenstyn|LW|28|||2916667||6|U|NTC
+Justin Danforth|RW|33||I|1800000||1|U
+Sam Carrick|C|34||I|1000000||1|U
+Konsta Helenius|C|20|||953750||2|R||ew
+Jiri Kulich|C|22|||886667||1|R||ew
+Noah Ostlund|C|22|||886667||1|R||ew|6600000x8
+Tyson Kozak|C|23|||875000||2|RA
+Rasmus Dahlin|D|26|||11000000||6|U|NMC
+Owen Power|D|23|||8350000||5|U
+Mattias Samuelsson|D|26|||4285714||4|U
+Olen Zellweger|D|23|||3100000||3|R
+Conor Timmins|D|28||I|2200000||1|U
+Louis Crevier|D|25|||900000||1|RA|||4000000x4
+Zach Metsa|D|28|||850000||1|U|||900000x1
+Matt Grzelcyk|D|32||I|850000||1|U
+Dennis Gilbert|D|29|||850000||1|U
+Ukko-Pekka Luukkonen|G|27|||4750000||3|U|M-NTC
+Alex Lyon|G|33||I|1500000||1|U
+Colten Ellis|G|26|||850000||1|G6
+Jack Rathbone|D|27||S|850000||1|U
+Jake Richard|RW|22|N||1013750||2|R||ew
+Riley Fiddler-Schultz|C|24|N||940000||1|R||ew
+Zac Funk|RW|23|N||905000||1|R||ew
+Trevor Kuntar|C|25|N||875000||2|U
+Carson Meyer|RW|29|N||850000||1|U
+Mason Geertsen|LW|31|N||850000||1|U
+Jason Polin|RW|27|N||850000||1|U
+Aidan McDonough|LW|26|N||850000||1|U
+Conor Sheary|LW|34|N||850000||1|U
+Maxim Strbak|D|21|N||1028333||3|R||ew
+Gavin McCarthy|D|21|N||1007500||3|R||ew
+Radim Mrtka|D|19|N||974167||3|R||ew
+Daniel Laatsch|D|24|N||935000||1|R||ew
+Vsevolod Komarov|D|22|N||910000||1|R||ew
+Caleb Jones|D|29|N||900000||1|U
+Topias Leinonen|G|22|N||961667||2|R||ew
+Scott Ratzlaff|G|21|N||935000||2|R||ew
+Matt Villalta|G|27|N||850000||1|U
+$Jeff Skinner|buyout|6444444
+@271,273,274,275,276,277,281,282,283,284,285,286,291,292,293,294,295,296,297,273SJS,283EDM
+#CAR|Carolina Hurricanes|E|Metropolitan|#CC0000|96398044|7601956|0|21|42
+Sebastian Aho|C|29|||9750000||6|U|NMC
+Nikolaj Ehlers|LW|30|||8500000||5|U|NMC
+Andrei Svechnikov|RW|26|||7750000||3|U|M-NTC
+Seth Jarvis|RW|24||I|7420087||6|U
+Logan Stankoven|C|23|||6000000||8|U
+Jackson Blake|RW|23|||5117002||8|U
+Jesperi Kotkaniemi|C|26|||4820000||4|U|M-NTC
+Taylor Hall|LW|34||I|3166667||2|U|NMC
+Jordan Martinook|LW|34|||3125000||1|U|M-NTC
+Jordan Staal|C|38||I|2975000||1|U|NTC||4900000x1
+William Carrier|LW|31|||2150000||4|U|NMC
+Mark Jankowski|LW|32||I|1850000||2|U|M-NTC
+Eric Robinson|LW|31|||1700000||3|U|M-NTC
+Felix Unger Sorum|RW|21|||903333||2|R||ew
+Nicolas Deslauriers|LW|35|||875000||2|U
+Skyler Brind'Amour|C|27|||850000||1|U
+K'Andre Miller|D|26|||7500000||7|U
+Jaccob Slavin|D|32|||6395955||7|U
+Sean Walker|D|31|||3625000||3|U|M-NTC
+Shayne Gostisbehere|D|33|||3200000||1|U|M-NTC
+Jalen Chatfield|D|30|||3075000||1|U|M-NTC
+Juuso Valimaki|D|28|||900000||1|U
+Mike Reilly|D|33|||850000||1|U
+Pyotr Kochetkov|G|27|||2000000||1|U|||3950000x2
+Brandon Bussi|G|28|||1900000||3|U
+Ivan Ryabkin|C|19|N||952222||3|R||ew
+Gleb Trikozov|LW|22|N||937500||1|R||ew
+Bradly Nadeau|LW|21|N||918333||1|R||ew
+Charlie Cerrato|C|21|N||915000||2|R10||ew
+Justin Robidas|C|23|N||850000||1|R
+Viktor Neuchev|LW|22|N||850000||1|R
+Juha Jaaska|LW|28|N||850000||1|U
+Joel Nystrom|D|24|N||1225000||4|U||w
+William Hakansson|D|19|N|O|996000||3|R||ew
+Noel Fransen|D|20|N||990000||3|R||ew
+Dominik Badinka|D|20|N||931350||3|R||ew
+Charles-Alexis Legault|D|23|N||915833||1|R||ew
+Bryce Montgomery|D|23|N||854910||1|R||ew
+Aleksi Heimosalmi|D|23|N||850000||1|R
+Ronan Seeley|D|24|N||850000||1|RA
+Pierre-Olivier Joseph|D|27|N||850000||1|U
+Cayden Primeau|G|27|N||912500||2|U
+Ruslan Khazheev|G|21|N||870000||1|R||ew
+Zach Sawchenko|G|28|N||850000||1|U
+@271,272,273,274,275,276,281,282,283,284,285,286,287,281DALc,273DALc,291,292,293,294,295,296,297
+#CBJ|Columbus Blue Jackets|E|Metropolitan|#002654|103702000|204688|1300000|22|48
+Adam Fantilli|C|22|||13750000||6|U
+Matthew Knies|LW|24|||7750000||5|U
+Valeri Nichushkin|RW|31|||6125000||4|U|M-NTC
+Charlie Coyle|C|34|||6000000||6|U|NMC
+Conor Garland|RW|30|||6000000||6|U|NMC
+Sean Monahan|C|32|||5500000||3|U|NMC
+Cole Sillinger|C|23|||4625000||3|U
+Dmitri Voronkov|LW|26|||4175000||1|RA
+Mathieu Olivier|RW|29|||3000000||5|U|M-NTC
+Kent Johnson|C|24|||1800000||1|RA
+Ryan Lomberg|LW|31|||1300000||2|U
+Danton Heinen|LW|31|||1000000||1|U
+Luca Del Bel Belluz|C|22|||860000||1|R||e
+Zach Werenski|D|29|||9583333||2|U|NMC
+Ivan Provorov|D|29||I|8500000||6|U|NMC
+Damon Severson|D|32|||6250000||5|U|NTC
+Dante Fabbro|D|28||I|4125000||3|U|M-NTC
+Erik Gudbranson|D|34|||1750000||1|U
+Emil Andrae|D|24|||1550000||2|RA
+Carson Soucy|D|32|||1150000||1|U
+Jake Christiansen|D|27|||975000||1|U
+Denton Mateychuk|D|22|||886667||1|R||ew
+Jet Greaves|G|25|||5000000||3|U
+Cam Talbot|G|39|||950000||1|U
+Caleb MacDonald|D|23||S|922500||1|R||ew
+Isac Lundestrom|C|26||L|1300000||1|U
+Oiva Keskinen|C|22|N||960000||2|R||ew
+Joshua Eernisse|C|24|N||952500||1|R||ew
+Riley Bezeau|RW|24|N||940000||1|R||ew
+Luca Pinelli|C|21|N||934167||2|R||ew
+Max McCue|C|23|N||933333||1|R||ew
+Jack Williams|RW|24|N||875000||2|G6||w
+Luke Tuch|LW|24|N||875000||2|G6||w
+Mikael Pyyhtia|LW|24|N||875000||2|RA
+Jordan Dumais|RW|22|N||860000||1|R||ew
+James Malatesta|LW|23|N||850000||1|R
+Owen Sillinger|C|29|N||850000||1|U
+Steven Lorentz|C|30|N||1350000||2|U
+Boston Buckberger|D|23|N||1050000||2|R||ew
+Charlie Elick|D|20|N||965000||3|R||ew
+Guillaume Richard|D|23|N||942500||1|R||ew
+Luca Marrelli|D|21|N||931944||3|R||ew
+Colton White|D|29|N||875000||2|U
+Corson Ceulemans|D|23|N||850000||1|R
+Sergei Ivanov|G|22|N|O|970000||2|R||ew
+Evan Gardner|G|20|N||963889||3|R||ew
+Nolan Lalonde|G|22|N||860556||1|R10||ew
+Pheonix Copley|G|34|N||850000||1|U
+$Steven Lorentz|buried|125000
+$Elvis Merzlikins|retained salary|972000
+@271,272,273BOS,274,275,276,277,281,283,284,286,287,291,292,293,294,295,296,297,273WSH,285SJS
+#CGY|Calgary Flames|W|Pacific|#C8102E|90527500|13472500|0|23|41
+Jonathan Huberdeau|LW|33||I|10500000||5|U|NMC
+Matt Coronato|RW|23|||6500000||6|U
+Yegor Sharangovich|C|28|||5750000||4|U|M-NTC
+Joel Farabee|LW|26|||5000000||2|U
+Ryan Strome|C|33|||5000000||1|U
+Morgan Frost|C|27|||4375000||1|U|M-NTC
+Mikael Backlund|C|37|||3250000||2|U|NMC
+Martin Pospisil|C|26|||2500000||3|U
+Maxim Tsyplakov|RW|28|||2250000||1|U
+Adam Klapka|RW|26|||1250000||1|RA
+Jonathan Castagna|C|21|||1075000||3|R||ew
+Brennan Othmann|LW|23|||975000||1|R
+Matvei Gridin|RW|20|||953750||2|R||ew
+Aydar Suniev|LW|21|||923333||1|R10||ew
+Samuel Honzek|LW|21||I|909167||2|R||ew
+Ben Jones|C|27|||850000||1|U
+Simon Nemec|D|22|||7250000||5|U
+Kevin Bahl|D|26|||5350000||5|U
+Jake Middleton|D|30|||4350000||3|U|M-NTC
+Zach Whitecloud|D|29|||2750000||2|U
+Joel Hanley|D|35|||1750000||1|U
+Zayne Parekh|D|20|||953750||2|R||ew
+Yan Kuznetsov|D|24|||812500||1|G6
+Dustin Wolf|G|25|||7500000||7|U
+Devin Cooley|G|29|||1350000||2|U
+Connor Zary|C|25|N||3775000||2|RA
+Chase Harrington|LW|18|N|J|1075000||3|R||ew
+Theo Stockselius|C|19|N|O|1015833||3|R||ew
+Tyson Gross|C|24|N||975000||1|R10||ew
+Andrew Basha|LW|20|N||932500||3|R||ew
+Sam Morton|C|27|N||850000||1|U
+William Stromgren|LW|23|N||850000||1|R
+Dryden Hunt|LW|30|N||850000||1|U
+Rory Kerins|C|24|N||850000||1|G6
+Alexander Nylander|LW|28|N||850000||1|U
+Brayden Pachal|D|27|N||1187500||1|U
+Axel Hurtig|D|21|N||990000||3|R||ew
+Abram Wiebe|D|23|N||950000||1|R10||ew
+Hunter Brzustewicz|D|21|N||950000||1|R||ew
+Mike Benning|D|24|N||850000||1|G6
+Jake Livingstone|D|27|N||850000||1|U
+Kirill Zarubin|G|21|N||1007500||3|R||ew
+Arsenii Sergeev|G|23|N||903750||1|R||ew
+$Blake Coleman|retained salary|2450000
+$Nazem Kadri|retained salary|1400000
+$Connor Zary|buried|2550000
+@271,272,273,275,276,281,282,283,284,285,286,291,292,293,294,295,296,297,282VGKc,272COLc,273MIN,284MIN,292MIN
+#CHI|Chicago Blackhawks|W|Central|#CF0A2C|97386241|6613759|0|21|45
+Connor Bedard|C|21|||15000000||5|U
+Patrick Kane|RW|37|||8000000||2|U|NMC
+Frank Nazar|C|22|||6599991||7|U||w
+Tyler Bertuzzi|LW|31|||5500000||2|U|M-NTC
+Teuvo Teravainen|C|32|||5400000||1|U|M-NTC
+Ryan Donato|C|30|||4000000||3|U|M-NTC
+Jordan Greenway|LW|29|||4000000||1|U|M-NTC
+Andrew Mangiapane|LW|30||I|3600000||1|U|M-NTC
+Cole Smith|RW|30|||3000000||3|U|M-NTC
+Roman Kantserov|RW|22|||1075000||3|R||ew
+Anton Frondell|C|19|||986250||2|R||ew
+Ryan Greene|C|23|||950000||1|R10||e
+Oliver Moore|C|21|||941667||1|R10||ew|4250000x5
+Bowen Byram|D|25||I|6250000||1|U|||12500000x6
+Ryan Ellis|D|35||I|6250000||1|U
+Alex Vlasic|D|25|||4600000||4|U
+Ian Cole|D|37|||4000000||1|U
+Wyatt Kaiser|D|24|||1700000||1|RA
+Kevin Korchinski|D|22|||1325000||2|R
+Artyom Levshunov|D|20|||975000||1|R||ew
+Ethan Del Mastro|D|23|||950000||2|R
+Sam Rinzel|D|22|||941667||1|R10||ew
+Spencer Knight|G|25|||5833333||3|U
+Arvid Soderblom|G|27|||2750000||1|U
+Jiri Felcman|C|21|N||996667||3|R||ew
+Sacha Boisvert|C|20|N||974167||2|R10||ew
+Marek Vanacker|LW|20|N||941667||3|R||ew
+Anthony (AJ) Spellacy|RW|20|N||932500||3|R||ew
+Martin Misiak|RW|22|N||928333||1|R10||ew
+Nick Lardis|LW|21|N||925000||2|R||ew
+Paul Ludwinski|C|22|N||900000||1|R10||ew
+Landon Slaggert|LW|24|N||900000||1|RA
+Samuel Savoie|LW|22|N||896667||1|R||ew
+Gavin Hayes|LW|22|N||865000||1|R||ew
+Connor Mylymok|LW|26|N||850000||1|U||w
+Dillon Boucher|LW|29|N||850000||1|U||w
+Dominic Toninato|C|32|N||850000||1|U
+Connor Mackey|D|30|N||937500||2|U
+Taige Harding|D|24|N||930000||1|R||ew
+Jake Furlong|D|22|N||891667||1|R||ew
+Derrick Pouliot|D|32|N||850000||1|U
+Dylan Anhorn|D|27|N||850000||1|U||w
+Adam Gajan|G|22|N||1050000||2|R||ew
+Stanislav Berezhnoy|G|23|N||975000||1|R||ew
+Drew Commesso|G|24|N||875000||2|G6||w
+$Seth Jones|retained salary|2500000
+$TJ Brodie|buyout|258333
+@271,272,272VAN,273,274,276,277,281,282,283,284,285,286,291,292,293,294,295,296,297,284SJS,282EDM,271EDMc,271FLA,273TBL,276OTT
+#COL|Colorado Avalanche|W|Central|#6F263D|102057195|1625000|2500000|20|43
+Nathan MacKinnon|C|31|||12604000||5|U|NMC
+Martin Necas|C|27|||11500000||8|U|NMC
+Brock Nelson|C|35|||7500000||2|U|NMC
+Gabriel Landeskog|LW|33|||7000000||3|U|M-NTC, NMC
+Nazem Kadri|C|36|||7000000||3|U|M-NTC
+Artturi Lehkonen|LW|31|||4500000||1|U|M-NTC
+Jaden Schwartz|LW|34|||3250000||3|U|NMC
+Nicolas Roy|C|29||I|3000000||1|U
+Parker Kelly|C|27|||1700000||4|U
+Fedor Svechkov|C|23|||1250000||2|RA
+T.J. Hughes|RW|24|||952500||1|RA||ew
+Zachary L'Heureux|LW|23||I|875000||2|R
+Gavin Brindley|C|22|||875000||2|R||w
+Cale Makar|D|27|||9000000||1|U|||20400000x8
+Devon Toews|D|32|||7250000||5|U|M-NTC
+Sam Malinski|D|28|||4750000||4|U|NTC
+Brett Kulak|D|32|||4500000||5|U|NTC
+Josh Manson|D|35|||3950000||2|U|M-NTC
+Noah Juulsen|D|29|||1100000||2|U
+Brent Burns|D|41|||850000||1|U
+Mackenzie Blackwood|G|29|||5250000||4|U|M-NTC
+Scott Wedgewood|G|34|||2500000||1|U
+Georgii Merkulov|C|26||S|850000||1|G6
+Logan O'Connor|RW|30||L|2500000||5|U|M-NTC
+Matthew DiMarsico|C|22|N||980000||2|R||ew
+Cooper Gay|RW||N||947500||1|R||ew
+Nikita Prishchepov|C|22|N||881667||1|R||ew
+Adam Beckman|LW|25|N||875000||2|U
+Vinnie Hinostroza|C|32|N||875000||2|U
+Taylor Makar|LW|25|N||875000||2|U||w
+Fabian Lysell|RW|23|N||850000||1|R
+Tristen Nielsen|C|26|N||850000||1|U
+Gustav Stjernberg|D|24|N||980000||2|R||ew
+Sean Behrens|D|23|N||923333||1|R10||ew
+Alex Gagne|D|24|N||910000||1|R||ew
+Saige Weinstein|D|21|N||883333||2|R||ew
+Domenick Fensore|D|25|N||850000||1|G6
+Christian Wolanin|D|31|N||850000||1|U
+Keaton Middleton|D|28|N||850000||1|U
+Wyatt Aamodt|D|28|N||850000||1|U
+Nikita Novosyolov|G|22|N||979500||2|R||ew
+Ilya Nabokov|G|23|N||975000||1|R||ew
+Trent Miner|G|25|N||850000||1|G6
+@273,274,276,277,284,285,286,287,275SJS,291,292,294,295,296,297,272MIN,274CGY,273CBJ,285CBJ
+#DAL|Dallas Stars|W|Central|#006847|102294657|1411900|3973228|21|45
+Jason Robertson|LW|27|||12000000||1|U
+Mikko Rantanen|RW|29|||12000000||7|U|NMC
+Tyler Seguin|C|34|||9850000||1|U|NMC
+Roope Hintz|C|29|||8450000||5|U|NMC
+Wyatt Johnston|C|23|||8400000||4|U
+Sam Steel|C|28|||2100000||1|U|||3700000x4
+Radek Faksa|C|32|||2000000||2|U
+Joel Kiviranta|LW|30|||1000000||1|U
+Justin Hryckowian|C|25|||950000||2|U
+Arttu Hyry|RW|25|||875000||2|U||w
+Jamie Benn|LW|37|||850000||1|U|NMC
+Colin Blackwell|C|33|||850000||1|U
+David Perron|LW|38||X|850000||1|U
+Oskar Back|C|26||I|825000||1|U
+Thomas Harley|D|25|||10587000||8|U
+Miro Heiskanen|D|27|||8450000||3|U|NMC
+Esa Lindell|D|32||I|5250000||4|U|M-NTC
+Nils Lundkvist|D|26|||1750000||2|U
+Tyler Myers|D|36|||3000000||1|U|M-NTC
+Lian Bichsel|D|22|||918333||1|R||ew
+Kyle Capobianco|D|29|||875000||2|U
+Jake Oettinger|G|27|||8250000||7|U|NMC
+Casey DeSmith|G|35|||1050000||1|U|||2500000x2
+Cameron Hughes|C|30||S|850000||1|U
+Luke Krys|D|26||S|875000||2|U
+Matt Duchene|C|35||L|4500000||3|U|NMC
+Dylan Hryckowian|RW|22|N||1013750||2|R||ew
+Christian Fitzgerald|C|24|N||952500||1|R||ew
+Artem Shlaine|C|24|N||952500||1|R||ew
+Angus MacDonell|C|21|N||950000||2|R||ew
+Jaxon Fuder|C|20|N||950000||3|R||ew
+Justin Ertel|LW|23|N||942500||1|R||ew
+Ayrton Martino|LW|24|N||942500||1|R||ew
+Emil Hemming|RW|20|N||941667||3|R||ew
+Matthew Seminoff|RW|22|N||875000||2|R
+Harrison Scott|C|26|N||875000||2|U
+Aram Minnetian|D|21|N||1075000||3|R||ew
+Jack Anderson|D|23|N||1050000||2|R||ew
+Trey Taylor|D|24|N||975000||1|R||ew
+Niilopekka Muhonen|D|20|N||950000||3|R||ew
+Connor Punnett|D|23|N||945000||1|R||ew
+Tristan Bertucci|D|21|N||934167||2|R||ew
+Kyle Burroughs|D|31|N||850000||1|U
+Arno Tiefensee|G|24|N||925000||1|R||ew
+Brandon Halverson|G|30|N||850000||1|U
+@271,274,275,276,277,283,284,285,286,287,291,292,293,295,296,297,272NSH,283VGK
+#DET|Detroit Red Wings|E|Atlantic|#CE1126|88107084|15892916|0|23|44
+Dylan Larkin|C|30|||8700000||5|U|NTC
+Lucas Raymond|LW|24|||8075000||6|U
+Alex DeBrincat|RW|28|||7875000||1|U|M-NTC||13000000x7
+Andrew Copp|C|32|||5625000||1|U|M-NTC
+J.T. Compher|LW|31||I|5100000||2|U|M-NTC
+Viktor Arvidsson|LW|33|||5000000||2|U|M-NTC
+Michael Rasmussen|C|27|||3200000||2|U
+Mason Appleton|C|30||I|2900000||1|U
+Keegan Kolesar|RW|29|||2500000||2|U
+Michael Brandsegg-Nygard|RW|21|||953750||2|R||ew
+Emmitt Finnie|C|21|||921667||2|R||ew
+Nate Danielson|C|22|||909167||2|R||ew
+Marco Kasper|C|22||I|886667||1|R||e
+Carter Mazur|LW|24|||875000||2|RA
+Sheldon Dries|C|32|||875000||2|U
+Moritz Seider|D|25|||8550000||5|U
+Justin Faulk|D|34|||6500000||1|U|M-NTC
+Ben Chiarot|D|35|||3850000||3|U
+Jacob Bernard-Docker|D|26|||1600000||2|U
+Albert Johansson|D|25|||1125000||1|RA
+Anton Johansson|D|22|||970000||2|R||ew
+Axel Sandin-Pellikka|D|21|||940833||2|R||ew
+Andreas Englund|D|30|||900000||1|U
+William Wallinder|D|24|||875000||2|G6
+John Gibson|G|33|||6400000||1|U|M-NTC
+Daniil Tarasov|G|27|||2000000||1|U
+Dylan James|LW|23|N||1050000||2|R||ew
+Sutter Muzzatti|C|23|N||1050000||2|R||ew
+Théo Rochette|C|24|N||1025000||1|R||ew
+Eddie Genborg|RW|19|N||997500||3|R||ew
+Noah Dower Nilsson|LW|21|N||990000||3|R||ew
+Carter Bear|LW|19|N||974167||3|R||ew
+Jesse Kiiskinen|RW|21|N||945833||2|R||ew
+Ondrej Becher|C|22|N||940000||1|R||ew
+Dominik Shine|RW|33|N||875000||2|U
+John Leonard|LW|28|N||850000||1|U
+Cameron Butler|RW|24|N||850000||1|G6
+Wilmer Skoog|C|27|N||850000||1|U
+Chase Stillman|RW|23|N||850000||1|R
+Shai Buium|D|23|N||942500||1|R||ew
+Jacob Bryson|D|28|N||850000||1|U
+William Lagesson|D|30|N||850000||1|U
+Ronnie Attard|D|27|N||850000||1|U
+Trey Augustine|G|21|N||1075000||3|R||ew
+Michal Postava|G|24|N||975000||1|R||ew
+Carter Gylander|G|25|N||850000||1|G6||w
+@271,273,274,275,276,281,282,283,284,285,286,287,291,292,294,295,296,297,277VGK
+#EDM|Edmonton Oilers|W|Pacific|#041E42|100285000|3411667|2736667|22|47
+Leon Draisaitl|C|30|||14000000||7|U|NMC
+Connor McDavid|C|29|||12500000||2|U|NMC
+Zach Hyman|LW|34|||5500000||2|U|M-NTC
+Ryan Nugent-Hopkins|C|33||I|5125000||3|U|NMC
+Jason Dickinson|C|31||I|4000000||5|U|NMC
+Trent Frederic|C|28|||3850000||7|U|NMC
+Vasily Podkolzin|RW|25|||2950000||3|U
+Kasperi Kapanen|RW|30|||2600000||1|U
+Mattias Janmark|C|33||I|1450000||1|U|M-NTC
+Colton Dach|C|23|||1200000||2|R
+Mathieu Joseph|RW|29|||1000000||1|U
+Isaac Howard|LW|22|||972500||2|R||ew
+Owen Michaels|RW|24|||900000||2|R||w
+Alex Formenton|LW|27|||850000||1|U
+Max Jones|LW|28|||850000||1|U
+Filip Hallander|C|26|||850000||1|U
+Evan Bouchard|D|27|||10500000||3|U
+Jake Walman|D|30|||7000000||7|U|NMC
+Connor Murphy|D|33|||4100000||5|U|NMC
+Mattias Ekholm|D|36|||4000000||3|U|NMC
+Ryan Shea|D|29|||4000000||5|U|NTC
+Shakir Mukhamadullin|D|24|||1750000||2|RA
+Ty Emberson|D|26|||1300000||1|U
+Tristan Jarry|G|31|||5375000||2|U|M-NTC
+Devon Levi|G|24|||812500||1|RA
+Atro Leppanen|D|27||S|850000||1|U
+Frederik Andersen|G|37||L|1000000||1|U|NMC
+Matthew Savoie|C|22||L|886667||1|R||ew
+Alec Regula|D|26||L|850000||1|G6
+William Nicholl|C|20|N||985000||3|R||ew
+Josh Samanski|C|24|N||975000||1|R||ew
+Viljami Marjala|LW|23|N||947500||1|R||ew
+James Stefan|RW|23|N||945000||1|R||ew
+Connor Clattenburg|C|21|N||928333||2|R||ew
+Brady Stonehouse|RW|22|N||896667||1|R10||ew
+Quinn Hutson|RW|24|N||875000||2|G6||w
+Aku Raty|RW|25|N||850000||1|G6||w
+Eduards Tralmaks|RW|29|N||850000||1|U
+Josh Brown|D|32|N||1000000||1|U
+Tomas Cibulka|D|22|N||955000||2|R||ew
+Damien Carfagna|D|23|N||937500||1|R||ew
+Beau Akey|D|21|N||894167||2|R||ew
+Riley Stillman|D|28|N||850000||1|U
+Nathaniel Day|G|21|N||956667||2|R||ew
+Samuel Jonsson|G|22|N||955000||2|R||ew
+Connor Ungar|G|24|N||850000||1|G6||w
+Matt Tomkins|G|32|N||850000||1|U
+$Jack Campbell|buyout|2600000
+@272,275,276,277,281,284,285,286,287,283STL,291,293,294,295,296,297,275BOS,287BUF
+#FLA|Florida Panthers|E|Atlantic|#C8102E|102554986|1410728|4878228|22|47
+Matthew Tkachuk|LW|28|||9500000||4|U|NMC
+Sam Reinhart|C|30|||8625000||6|U|NMC
+Brady Tkachuk|LW|27|||8205714||2|U|NMC
+Sam Bennett|C|30|||8000000||7|U|NMC
+Carter Verhaeghe|C|31|||7000000||7|U|NMC
+Brad Marchand|LW|38||I|5250000||5|U|NMC
+Anton Lundell|C|25|||5000000||4|U
+Eetu Luostarinen|C|28|||3000000||1|U|||5000000x8
+Garnet Hathaway|RW|34|||1200000|2400000|1|U
+Sandis Vilmanis|LW|22|||930000||1|R||ew|925000x2
+Cole Schwindt|RW|25|||875000||2|U
+Lars Eller|C|37|||850000||1|U
+Bokondji Imama|LW|30|||850000||1|U
+Cole Reinhardt|LW|26|||812500||1|U
+Seth Jones|D|32|||9500000||4|U|NMC
+Aaron Ekblad|D|30|||6100000||7|U|NMC
+Gustav Forsling|D|30|||5750000||6|U|NMC
+Niko Mikkola|D|30|||5000000||8|U|NMC
+Radko Gudas|D|36|||1500000||6|U
+Dmitry Kulikov|D|35|||1180000||2|U
+Uvis Balinskis|D|30|||875000||2|U
+Jacob Markstrom|G|36||I|6000000||2|U|M-NTC
+Akira Schmid|G|26|||2000000||2|U
+Cooper Black|G|25|||875000||2|U||w
+Aleksander Barkov|C|31||L|10000000||4|U|NMC
+Jonah Gadjovich|LW|28||L|905000||2|U
+Samu Salminen|C|23|N||980000||2|R||ew
+Jack Devine|RW|23|N||972500||2|R||ew
+Gracyn Sawchyn|C|21|N||934166||2|R||ew
+Hunter St. Martin|LW|21|N||928889||2|R||ew
+Kai Schwindt|LW|22|N||873333||1|R||e
+Angus Crookshank|C|27|N||850000||1|U
+John Beecher|C|25|N||850000||1|RA
+Nathan Bastian|RW|28|N||850000||1|U
+MacKenzie Entwistle|RW|27|N||850000||1|U
+Sam Lafferty|C|31|N||850000||1|U
+Matvei Shuravin|D|20|N||1000000||3|R||ew
+Ludvig Jansson|D|22|N||955000||2|R||ew
+Emil Pieniniemi|D|21|N||906667||2|R||ew
+Alexander Petrovic|D|34|N||875000||2|U
+Marek Alscher|D|22|N||865000||1|R||ew
+Tobias Bjornfot|D|25|N||850000||1|RA
+Mikulas Hovorka|D|25|N||850000||1|G6||w
+Casey Fitzgerald|D|29|N||850000||1|U
+Donovan Sebrango|D|24|N||850000||1|RA
+Tyler Muszelik|G|22|N||960000||2|R||ew
+Kirill Gerasimyuk|G|23|N||925000||1|R||ew
+@273,275,276,277,282,284,285,286,287,277SJS,292,293,294,295,296,297,276WSH,272WPGc
+#LAK|Los Angeles Kings|W|Pacific|#111111|104017500|-17500|0|23|45
+Artemi Panarin|LW|34|||11000000||2|U|NMC
+Adrian Kempe|RW|30|||10625000||8|U|NMC
+Kevin Fiala|LW|30||I|7875000||3|U|M-NTC
+Quinton Byfield|RW|24|||6250000||3|U
+Trevor Moore|LW|31|||4200000||2|U
+Alex Laferriere|RW|24|||4100000||2|RA
+Erik Haula|LW|35|||3600000||2|U|NTC
+Scott Laughton|C|32|||3500000||3|U|NTC
+Joel Armia|RW|33|||2500000||1|U
+Corey Perry|RW|41|||1000000||1|U|NTC
+Mats Zuccarello|RW|39|||1000000||1|U|NTC
+Jared Wright|RW|23|||942500||1|R||ew|925000x2
+Samuel Helenius|C|23|||875000||2|RA
+Taylor Ward|RW|28|||875000||2|U
+Alex Turcotte|C|25||I|850000||1|RA
+Andre Lee|LW|26|||850000||1|G6
+Drew Doughty|D|36|||11000000||1|U|M-NTC
+Brandt Clarke|D|23|||7400000||5|U
+Cody Ceci|D|32|||4500000||3|U|M-NTC
+Mikey Anderson|D|27|||4125000||5|U|M-NTC
+Brian Dumoulin|D|35|||4000000||2|U|M-NTC
+Joel Edmundson|D|33|||3850000||2|U|M-NTC
+Erik Gustafsson|D|34|||1000000||1|U
+Darcy Kuemper|G|36|||5250000||1|U|M-NTC
+Anton Forsberg|G|33|||2250000||1|U
+Jakub Dvorak|D|21||S|905000||2|R||ew
+Jan Jenik|C|26||S|850000||1|G6
+Elton Hermansson|RW|18|N|O|1075000||3|R||ew
+Vojtech Cihar|LW|19|N||974167||3|R||ew
+Jimmy Lombardi|C|19|N|J|956667||3|R||ew
+Grant Slukynsky|C|24|N||952500||1|R||ew
+Kenny Connors|C|23|N||942500||1|R||ew
+Kaleb Lawrence|C|23|N||927500||1|R||ew
+Koehn Ziemmer|RW|21|N||904167||2|R||ew
+Lane Pederson|C|29|N||875000||2|U
+Aatu Jamsen|RW|24|N||850000||1|RA||w
+Francesco Pinelli|C|23|N||850000||1|R
+Martin Chromiak|RW|24|N||850000||1|RA
+Cole Guttman|C|27|N||850000||1|U
+Henry Brzustewicz|D|19|N||1075000||3|R||ew
+Jared Woolley|D|20|N||958333||3|R||ew
+Otto Salin|D|22|N||956250||2|R||ew
+Kirill Kirsanov|D|24|N||942500||1|R||ew
+Angus Booth|D|22|N||901667||1|R||ew
+Joe Hicketts|D|30|N||850000||1|U
+Scott Perunovich|D|28|N||850000||1|U
+Hampton Slukynsky|G|21|N||1075000||3|R||ew
+Carter George|G|20|N||929167||3|R||ew
+Erik Portillo|G|26|N||833333||1|G6||w
+$Mike Richards|terminated|600000
+@271,272,274,275,276,281,282,283,284,285,286,287,291,292,293,294,295,296,297,282TBL
+#MIN|Minnesota Wild|W|Central|#154734|102438021|1423228|3973228|22|44
+Kirill Kaprizov|LW|29|||17000000||8|U|NMC
+Matt Boldy|LW|25|||7000000||4|U
+Joel Eriksson Ek|C|29|||5250000||3|U|M-NTC, NMC
+Marcus Foligno|LW|35||I|4000000||2|U|M-NTC
+Ryan Hartman|RW|32|||4000000||1|U|M-NTC
+Yakov Trenin|C|29|||3500000||2|U
+Michael McCarron|C|31|||3333333||6|U|NMC
+Bobby Brink|RW|25|||2750000||1|RA
+Blake Coleman|LW|34|||2450000|4900000|1|U|M-NTC
+Nico Sturm|C|31|||2000000||1|U
+Maxim Shabanov|RW|26|||1600000||1|RA
+Rieger Lorenz|LW|22|||1013750||2|R||ew
+Danila Yurov|RW|22|||972500||2|R||e
+Nick Foligno|LW|38||I|900000||1|U
+Tyler Pitlick|C|34|||850000||1|U
+Brock Faber|D|24||I|8500000||7|U
+Quinn Hughes|D|27|||7850000||1|U
+Jared Spurgeon|D|36||I|7575000||1|U|M-NTC
+Jonas Brodin|D|33|||6000000||2|U
+Olli Maatta|D|32||I|3500000||2|U|M-NTC
+Zach Bogosian|D|36|||1250000||1|U
+Daemon Hunt|D|24|||900000||1|RA
+David Spacek|D|23|||850000||1|R
+Matt Kiersted|D|28|||850000||1|U
+Carson Lambos|D|23|||850000||1|R
+Jesper Wallstedt|G|23|||2200000||1|RA
+Calvin Pickard|G|34|||1000000||1|U
+Filip Gustavsson|G|28||L|6800000||5|U|NMC
+Charlie Stramel|C|22|N||1075000||3|R||ew
+Riley Heidt|C|21|N||940833||2|R||ew
+Rasmus Kumpulainen|C|21|N||924583||2|R||ew
+Hunter Haight|C|22|N||883333||1|R||ew
+Jagger Joshua|LW|27|N||875000||2|U||w
+Caedan Bankier|C|23|N||850000||1|R
+Mason Shaw|C|27|N||850000||1|U
+Dylan Gambrell|C|30|N||850000||1|U
+Justin Kirkland|C|30|N||850000||1|U
+Ben Dexheimer|D|24|N||980000||1|R||ew
+Viking Gustafsson Nyberg|D|23|N||975000||1|R10||ew
+Stevie Leskovar|D|22|N||960000||2|R||ew
+Jack Peart|D|23|N||942500||1|R||ew
+Roman Schmidt|D|23|N||850000||1|R
+Filip Ruzicka|G|18|N|J|987500||3|R||ew
+Chase Wutzke|G|20|N||958333||3|R||ew
+Riley Mercer|G|22|N||920000||2|R||ew
+$Zach Parise|buyout|833333
+$Ryan Suter|buyout|833333
+@271,274,275,276,277,281,283,285,286,287,291,293,294,295,296,297
+#MTL|Montreal Canadiens|E|Atlantic|#AF1E2D|101641910|2358090|0|20|44
+Nick Suzuki|C|27|||7875000||4|U|M-NTC
+Cole Caufield|RW|25|||7850000||5|U
+Juraj Slafkovsky|LW|22|||7600000||7|U
+Josh Anderson|RW|32|||5500000||1|U|M-NTC
+Phillip Danault|C|33|||5500000||1|U|M-NTC
+Zack Bolduc|RW|23|||4200000||4|U
+Kirby Dach|C|25|||3600000||1|U
+Alex Newhook|C|25|||2900000||1|RA|||5550000x4
+Jake Evans|C|30|||2850000||3|U
+Alexandre Texier|LW|27|||2500000||2|U
+Chris Kreider|LW|35|||2150000||1|U|NMC
+Oliver Kapanen|C|23|||942500||1|R||e
+Florian Xhekaj|LW|22||I|941667||1|R||ew
+Ivan Demidov|RW|20||I|940833||1|R||ew|9150000x8
+Noah Dobson|D|26|||9500000||7|U|M-NTC
+Lane Hutson|D|22|||8850000||8|U
+Mike Matheson|D|32||I|6000000||5|U|NMC
+Kaiden Guhle|D|24|||5550000||5|U
+Alexandre Carrier|D|30|||3750000||1|U
+Arber Xhekaj|D|25|||1500000||1|RA
+Adam Engstrom|D|22|||896667||1|R||ew
+Sam Montembeault|G|29||I|3150000||1|U
+Jakub Dobes|G|25|||965000||1|RA|||5357575x3
+Jacob Fowler|G|21|||945833||2|R||ew
+Bryce Pickford|D|20||S|965000||3|R||ew
+Lucas Condotta|LW|28||S|850000||1|U
+Vinzenz Rohrer|C|22|N|O|972500||2|R||ew
+Tyler Thorpe|RW|21|N||968333||2|R||ew
+Filip Mesar|RW|22|N||886667||1|R||ew
+Owen Beck|C|22|N||853333||1|R||ew
+Jared Davidson|C|24|N||850000||1|RA||w
+Alex Belzile|RW|35|N||850000||1|U
+Brett Berard|LW|24|N||850000||1|RA
+Hunter McKown|C|24|N||850000||1|RA
+Sam Poulin|RW|25|N||850000||1|G6
+Sasha Pastujov|RW|23|N||850000||1|R
+Luke Mittelstadt|D|23|N||1013750||2|R||ew
+Bogdan Konyushkov|D|23|N|O|1013750||2|R||ew
+Owen Protz|D|20|N||1004167||3|R||ew
+David Reinbacher|D|21|N||909167||2|R||ew
+Ethan Samson|D|23|N||850000||1|R
+Maksymilian Szuber|D|24|N||850000||1|RA
+Reilly Walsh|D|27|N||850000||1|U
+Kaapo Kahkonen|G|30|N||1000000||1|U
+$Brendan Gallagher|retained salary|3250000
+@271,272,274,275,276,277,281,282,283,284,285,286,287,291,292,293,294,295,296,297,277LAK,272VGK
+#NJD|New Jersey Devils|E|Metropolitan|#CE1126|100954427|2975000|1750000|23|45
+Timo Meier|RW|30|||8800000||5|U|NMC
+Jack Hughes|C|25|||8000000||4|U|M-NTC
+Jesper Bratt|LW|28|||7875000||5|U|NMC
+Nico Hischier|C|27|||7250000||1|U|M-NTC||11700000x5
+Anthony Mantha|RW|32|||4750000||2|U
+Dawson Mercer|C|24|||4000000||1|RA
+Arseni Gritsyuk|RW|25|||3250000||3|U
+Evan Rodrigues|C|33|||3075000||1|U
+Connor Brown|RW|32|||3000000||3|U|NTC
+Luke Evangelista|RW|24|||3000000||1|RA|||7250000x5
+Cody Glass|C|27|||2500000||1|U
+Jesper Boqvist|C|27|||1500000||1|U
+Amadeus Lombardi|C|23|||875000||2|G6
+Dougie Hamilton|D|33|||9000000||2|U|M-NTC, NMC
+Luke Hughes|D|23|||9000000||6|U
+Brett Pesce|D|31|||5500000||4|U|NTC
+Brenden Dillon|D|35|||4000000||1|U|M-NTC
+Johnathan Kovacevic|D|29|||4000000||4|U|NTC
+Jonas Siegenthaler|D|29|||3400000||2|U|M-NTC
+Declan Chisholm|D|26|||1600000||1|U
+Jake Allen|G|36|||1800000||4|U|NTC
+Nico Daws|G|25|||1100000||2|U
+Remi Poirier|G|25|||850000||1|G6
+Seamus Casey|D|22||S|950000||1|R||ew
+Nick Bjugstad|C|34||L|1750000||1|U
+Stefan Noesen|RW|33|N||2750000||1|U|M-NTC
+Lenni Hameenaho|RW|21|N||972500||2|R||ew
+Matyas Melovsky|C|22|N||972500||2|R||ew
+Shane Lachance|LW|23|N||942500||1|R||ew
+Cam Squires|RW|21|N||938333||2|R||ew
+Josh Filmon|LW|22|N||913333||1|R||ew
+Colin White|C|29|N||900000||1|U
+Xavier Parent|C|25|N||850000||1|RA||w
+Ben Steeves|LW|24|N||850000||1|G6||w
+Marc McLaughlin|C|27|N||850000||1|U
+Riley Tufte|LW|28|N||850000||1|U
+Anton Silayev|D|20|N||1075000||3|R||ew
+Mikael Diotte|D|23|N||950000||1|R10||ew
+Ethan Edwards|D|24|N||942500||1|R||ew
+Etienne Morin|D|21|N||934166||2|R||ew
+Jeremy Hanzel|D|23|N||926667||1|R||ew
+Topias Vilen|D|23|N||850000||1|R
+Vladislav Kolyachonok|D|25|N||850000||1|RA
+David Rittich|G|34|N||1000000||1|U
+Jakub Malek|G|24|N||875000||2|G6||w
+$Stefan Noesen|buried|1525000
+@271,272,275,277,281,283,284,285,286,287,291,292,293,294,295,296,297,271VGKc
+#NSH|Nashville Predators|W|Central|#FFB81C|95741223|8258777|0|23|45
+Filip Forsberg|LW|32|||8500000||4|U|NMC
+Steven Stamkos|C|36|||8000000||2|U|NMC
+Jonathan Marchessault|C|35|||5500000||3|U|NMC
+Mavrik Bourque|C|24||I|5500000||6|U
+Ryan O'Reilly|C|35|||4500000||1|U
+Jack Drury|C|26|||4500000||5|U
+Ross Colton|C|30|||4000000||1|U|M-NTC
+Alex Kerfoot|C|32|||3500000||2|U
+Nils Hoglander|LW|25|||3000000||2|U
+Vitali Pinchuk|C|24|||1025000||1|R||ew
+Adam Edstrom|C|26|||975000||1|RA
+Matthew Wood|RW|21|||950000||1|R10||ew
+Reid Schaefer|LW|23|||886667||1|R||e
+Roman Josi|D|36|||9059000||2|U|NMC
+Brady Skjei|D|32|||7000000||5|U|NMC
+Nicolas Hague|D|27|||5500000||3|U
+Ilya Lyubushkin|D|32|||3250000||1|U
+Nick Perbix|D|28|||2750000||1|U
+Jayden Struble|D|25|||1412500||1|RA
+Jack Ahcan|D|29|||875000||2|U
+Adam Wilsby|D|26|||850000||1|RA
+William Trudeau|D|24||I|850000||1|RA
+Juuse Saros|G|31|||7740000||7|U|NMC
+Justus Annunen|G|26|||1250000||2|U
+Matt Murray|G|28|||812500||1|U
+Felix Nilsson|C|21|N||1028333||3|R||ew
+Brady Martin|C|19|N||974167||3|R||ew
+Aiden Fink|RW|21|N||972500||2|R10||ew
+Joey Willis|C|21|N||935000||2|R||ew
+Cole O'Hara|RW|24|N||935000||1|R||ew
+Hiroki Gojsic|RW|20|N||930000||3|R||ew
+Austin Roest|RW|22|N||920000||1|R10||ew
+David Edstrom|C|21|N||909167||2|R||ew
+Kalan Lind|LW|21|N||906667||2|R||ew
+Joakim Kemell|RW|22|N||886667||1|R||ew
+Chase Bradley|LW|24|N||875000||2|G6||w
+Jacob Lucchini|C|31|N||850000||1|U
+Ozzy Wiesblatt|C|24|N||850000||1|G6
+Tyson Jost|C|28|N||850000||1|U
+Viggo Gustafsson|D|20|N||990000||3|R||ew
+Daniel Nieminen|D|20|N||975000||3|R||ew
+Ryan Ufko|D|23|N||942500||1|R||ew
+Andrew Gibson|D|21|N||925000||2|R||ew
+Tanner Molendyk|D|21|N||909167||2|R||ew
+Hunter Skinner|D|25|N||850000||1|G6
+Isak Posch|G||N||947500||1|R||ew
+$Kyle Turris|buyout|2000000
+$Matt Duchene|buyout|1555556
+@271,273,274,275,276,277,281,282,283,284,285,286,287,274NYR,291,292,293,294,295,296,297,273EDM,282MIN,275COL,285PIT,281COLc,282NJD
+#NYI|New York Islanders|E|Metropolitan|#00539B|102101250|1898750|0|21|42
+Mathew Barzal|C|29||I|9150000||5|U|M-NTC
+Bo Horvat|C|31|||8500000||5|U|NTC
+Brayden Schenn|C|35|||6500000||2|U|M-NTC
+Ondrej Palat|LW|35|||6000000||1|U|M-NTC, NMC
+Jean-Gabriel Pageau|C|33|||4850000||3|U|NTC
+Kyle Palmieri|C|35|||4750000||1|U|M-NTC
+Simon Holmstrom|RW|25|||3625000||1|RA
+Anthony Duclair|LW|31|||3500000||2|U|M-NTC
+Casey Cizikas|C|35|||2500000||1|U
+Matias Maccelli|LW|26||I|2250000||1|RA
+Emil Heineman|LW|24|||1100000||1|RA
+Victor Eklund|RW|20|||974167||3|R||ew
+Calum Ritchie|C|21||I|940833||2|R||ew
+Kyle MacLean|C|27|||850000||1|U
+Mitchell Chaffee|RW|28|||850000||1|U
+Alexander Romanov|D|26||I|6250000||7|U
+Ryan Pulock|D|32|||6150000||4|U|NTC
+Adam Pelech|D|32|||5750000||3|U|M-NTC
+Tony DeAngelo|D|30|||4500000||2|U|M-NTC
+Scott Mayfield|D|34|||3500000||4|U|NTC
+Logan Stanley|D|28|||1500000||1|U
+Matthew Schaefer|D|19|||986250||2|R||ew
+Matthew Kessel|D|26|||850000||1|U
+Ilya Sorokin|G|31|||8250000||6|U|NMC
+Semyon Varlamov|G|38|||2750000||1|U|M-NTC
+Pierre Engvall|LW|30|N||3000000||4|U|M-NTC
+Cole Eiserman|LW|20|N||1075000||3|R||ew
+Quinn Finley|LW|22|N||980000||2|R||ew
+Daniil Prokhorov|RW|19|N||965000||3|R||ew
+Jesse Nurmi|LW|21|N||938333||2|R||ew
+Gleb Veremyev|C|23|N||935000||1|R||ew
+Joey Larson|RW|25|N||875000||2|U||w
+Daylan Kuefler|LW|24|N||875000||2|G6
+Alex Jefferies|LW|24|N||850000||1|G6||w
+Matt Luff|RW|29|N||850000||1|U
+Liam Foudy|C|26|N||850000||1|U
+Kashawn Aitcheson|D|20|N||1075000||3|R||ew
+Malte Gustafsson|D|18|N|O|1075000||3|R||ew
+Vladimir Dravecky|D|18|N||1007500||3|R||ew
+Jesse Pulkkinen|D|21|N||930833||1|R||ew
+Isaiah George|D|22|N||913333||1|R||ew
+Calle Odelius|D|22|N||865000||1|R||ew
+Ethan Bear|D|29|N||850000||1|U
+Marshall Warren|D|25|N||850000||1|G6||w
+Vitek Vanecek|G|30|N||1000000||1|U
+Joshua Kotai|G|23|N||965000||2|R||ew
+Henrik Tikkanen|G|26|N||850000||1|G6
+$Pierre Engvall|buried|1775000
+@271,272,273,274,275,276,277,281,282,283,284,285,286,287,283COLc,291,292,293,294,295,296,297,276NJD
+#NYR|New York Rangers|E|Metropolitan|#0038A8|100458171|3190728|5173228|23|46
+Pavel Dorofeyev|RW|25|||11000000||7|U
+Mika Zibanejad|C|33|||8500000||4|U|NMC
+J.T. Miller|C|33|||8000000||4|U|NMC
+Alexis Lafrenière|LW|25|||7450000||6|U
+Oliver Bjorkstrand|RW|31|||4500000||1|U|M-NTC
+Will Cuylle|LW|24|||3900000||1|RA
+Eeli Tolvanen|RW|27|||1500000||1|U
+Taylor Raddysh|RW|28|||1500000||1|U
+Tye Kartye|LW|25|||1250000||1|RA
+Matt Rempe|C|24|||975000||1|RA
+Noah Laba|C|23|||945000||1|RA||e
+Gabe Perreault|RW|21|||941667||1|R10||ew
+Cole Beaudoin|C|20|||941667||3|R||ew
+Justin Dowling|C|36|||850000||1|U
+Adam Fox|D|28|||9500000||3|U|NMC
+Vladislav Gavrikov|D|30|||7000000||6|U|NMC
+Sean Durzi|D|28|||6000000||2|U|M-NTC
+Braden Schneider|D|25|||5500000||1|RA
+Marcus Pettersson|D|30|||5500000||5|U|NMC
+Alberts Smits|D|18|||1075000||3|R||ew
+Scott Morrow|D|23|||850000||1|RA
+Joonas Korpisalo|G|32||I|4000000||2|U|M-NTC
+Dylan Garand|G|24|||875000||2|G6
+Spencer Martin|G|31|||850000||1|U
+Adam Sykora|LW|22||S|881667||1|R||ew
+Aidan Thompson|C|24||S|920000||1|R||ew
+Igor Shesterkin|G|30||L|11567857||7|U|NMC
+Joe Veleno|C|26||L|1200000||1|U
+Brody Lamb|RW|23|N||980000||2|R||ew
+Jacob Battaglia|RW|20|N||965000||3|R||ew
+Carey Terrance|C|21|N||961667||2|R||ew
+Nathan Aspinall|LW|20|N||955555||3|R||ew
+Jaroslav Chmelar|RW|23|N||942500||1|R||ew
+Liam Greentree|RW|20|N||941667||3|R||ew
+Dylan Roobroeck|C|22|N||925000||1|R||ew
+Bryce McConnell-Barker|C|22|N||913333||1|R||ew
+Glenn Gawdin|C|29|N||875000||2|U
+Anton Blidh|LW|31|N||850000||1|U
+Juuso Parssinen|C|25|N||1250000||1|RA
+Jackson Dorrington|D|22|N||951667||2|R||ew
+Drew Fortescue|D|21|N||945833||2|R10||ew
+Marc Del Gaizo|D|27|N||875000||2|U
+Dennis Cholowski|D|28|N||875000||2|U
+Vincent Iorio|D|23|N||850000||1|RA
+Matthew Robertson|D|25|N||850000||1|RA
+Urho Vaakanainen|D|27|N||1550000||1|U
+Callum Tung|G|22|N||972500||2|R||ew
+$Urho Vaakanainen|buried|325000
+$Juuso Parssinen|buried|25000
+@271,273,275,276,277,282,283,285,286,287,291,292,293,294,295,296,297,273UTAc,272BOS,283BOSc
+#OTT|Ottawa Senators|E|Atlantic|#E31837|101541667|2458333|0|22|47
+Tim Stützle|C|24|||8350000||5|U
+Shane Pinto|C|25|||7500000||4|U
+Dylan Cozens|C|25|||7100000||4|U
+William Eklund|LW|24||I|5600000||3|RA
+Andre Burakovsky|LW|31|||5500000||1|U|M-NTC
+Drake Batherson|RW|28|||4975000||1|U|||10750000x8
+Fabian Zetterlund|LW|27|||4275000||2|U
+Warren Foegele|LW|30|||3500000||1|U|M-NTC
+Ridly Greig|C|24|||3250000||3|RA
+Michael Amadio|RW|30|||2600000||1|U
+Claude Giroux|RW|38|||2000000||1|U|NMC
+Nick Cousins|C|33|||1587500||2|U
+Kurtis MacDermid|LW|32||I|1150000||1|U
+Stephen Halliday|C|24|||1075000||2|RA||w
+Hayden Hodgson|RW|30|||850000||1|U
+Jake Sanderson|D|24|||8050000||6|U
+Thomas Chabot|D|29||I|8000000||2|U|M-NTC
+Jordan Spence|D|25|||5000000||4|U
+Artem Zub|D|31|||4600000||1|U|M-NTC
+Tyler Kleven|D|24|||1600000||1|RA
+Carter Yakemchuk|D|21|||941667||3|R||ew
+Nikolas Matinpalo|D|28|||875000||1|U
+Cameron Crotty|D|27|||812500||1|U
+Linus Ullmark|G|33|||8250000||3|U|NMC
+Samuel Ersson|G|27|||2200000||2|U
+Blake Montgomery|LW|21||S|1075000||3|R||ew
+Lucas Ellinas|LW|20|N||958333||3|R||ew
+Sammy Blais|LW|30|N||925000||2|U
+Oskar Pettersson|RW|22|N||910000||1|R||ew
+Eskild Bakke Olsen|C|24|N||910000||1|R||ew
+Philip Tomasino|RW|25|N||900000||1|RA
+Kasper Halttunen|RW|21|N||899167||2|R||ew
+Philippe Daoust|C|24|N||850000||1|G6
+Ryan Suzuki|C|25|N||850000||1|G6
+Tyler Boucher|RW|23|N||850000||1|R
+Xavier Bourgault|RW|23|N||850000||1|RA
+Hoyt Stanley|D|21|N||1075000||3|R||ew
+Gabriel Eliasson|D|20|N||1007500||3|R||ew
+Matthew Andonovski|D|21|N||924166||2|R10||ew
+Tomas Hamara|D|22|N||878333||1|R10||ew
+Jorian Donovan|D|22|N||871667||1|R||ew
+Djibril Toure|D|23|N||850000||1|R||w
+Christian Kyrou|D|23|N||850000||1|R
+Samuel Bolduc|D|25|N||850000||1|G6
+Lucas Beckman|G|19|N|J|1028333||3|R||ew
+Kevin Reidler|G|22|N||946250||2|R||ew
+Jackson Parsons|G|21|N||929167||2|R||ew
+Jonas Johansson|G|31|N||1250000||1|U
+$Joonas Korpisalo|retained salary|1000000
+$Colin White|buyout|875000
+$Jonas Johansson|buried|25000
+@271,272,273,274,281,282,283,284,285,286,287,291,292,293,294,295,296,297,272FLA,291FLAc
+#PHI|Philadelphia Flyers|E|Metropolitan|#F74902|94919584|9080416|0|22|47
+Trevor Zegras|C|25|||9125000||4|U
+Travis Konecny|RW|29||I|8750000||7|U|M-NMC
+Sean Couturier|C|33|||7750000||4|U|NMC
+Owen Tippett|RW|27||I|6200000||6|U|M-NTC
+Christian Dvorak|C|30|||5150000||5|U|NTC
+Noah Cates|LW|27|||4000000||3|U
+Tyson Foerster|RW|24||I|3750000||1|RA|||7100000x8
+Noel Acciari|C|34|||2800000||2|U
+Michael Bunting|LW|31|||1200000||1|U
+Nikita Grebenkin|RW|23||I|1100000||2|R||w
+Cole Knuble|RW|22|||980000||2|R||ew
+Porter Martone|RW|19|||977917||2|R||ew
+Alex Bump|LW|22|||972500||2|R||ew
+Matvei Michkov|RW|21|||950000||1|R||e
+Denver Barkey|C|21|||925833||2|R||ew
+Garrett Wilson|LW|35|||850000||1|U
+Jacob Gaucher|C|25|||850000||1|RA||w
+Jamie Drysdale|D|24|||6500000||4|U
+Travis Sanheim|D|30|||6250000||5|U|NTC
+Cam York|D|25||I|5150000||4|U
+Rasmus Ristolainen|D|31||I|5100000||1|U
+Nick Seeler|D|33|||2700000||2|U
+David Jiricek|D|22|||1500000||2|R
+Simon Benoit|D|28|||1350000||1|U
+Hunter McDonald|D|24|||912500||2|G6||w
+Oliver Bonk|D|21|||909167||2|R||ew
+Joseph Woll|G|28|||3666667||2|U
+Dan Vladar|G|29|||3350000||1|U|M-NTC||5500000x5
+Jack Berglund|C|20|N|O|1075000||3|R||ew
+Riley Thompson|C|24|N||1025000||1|R||ew
+Alex Ciernik|LW|22|N||1007500||3|R||ew
+Carl Grundstrom|RW|28|N||1000000||1|U
+Noah Powell|RW|21|N||985000||3|R||ew
+Ilya Pautov|RW|20|N||985000||3|R||ew
+Jett Luchanko|C|20|N||941667||3|R||ew
+David Goyette|C|22|N||891667||1|R||ew
+Zach Aston-Reese|LW|32|N||875000||2|U
+Jack Studnicka|C|27|N||875000||2|U
+Danila Klimovich|RW|23|N||850000||1|R
+Nolan Foote|LW|25|N||850000||1|G6
+Ty Murchison|D|23|N||935000||1|R||ew
+Spencer Gill|D|20|N||932500||3|R||ew
+Jackson Edward|D|22|N||906667||1|R||ew
+Cam Dineen|D|28|N||875000||2|U
+Helge Grans|D|24|N||837500||1|G6
+Carson Bjarnason|G|21|N||885000||2|R||ew
+Aleksei Kolosov|G|24|N||850000||1|RA||w
+$Garnet Hathaway|retained salary|1200000
+@271,272,273,274,275,277,281,282,283,284,285,286,287,287CGY,273LAK,271TORc,291,292,293,294,295,296,297,277CARc,274FLA
+#PIT|Pittsburgh Penguins|E|Metropolitan|#FFB81C|96697360|7302640|0|23|45
+Sidney Crosby|C|39|||8700000||1|U|NMC
+Yegor Chinakhov|RW|25|||6250000||3|U
+Evgeni Malkin|C|40|||5500000||1|U|NMC
+Bryan Rust|RW|34|||5125000||2|U
+Rickard Rakell|RW|33|||5000000||2|U|M-NTC
+Andrei Kuzmenko|LW|30|||5000000||1|U|M-NTC
+Ville Koivunen|RW|23|||4000000||8|U
+Tommy Novak|C|29|||3500000||1|U|||4650000x3
+Nicholas Robertson|LW|25|||3250000||2|RA
+Blake Lizotte|C|28|||2250000||3|U
+Connor Dewar|C|27|||2250000||2|U
+Justin Brazeau|RW|28||I|1500000||1|U
+Hendrix Lapierre|C|24|||1300000||2|RA
+Elmer Soderblom|LW|25|||1125000||1|RA
+Benjamin Kindel|C|19|||986250||2|R||ew
+Erik Karlsson|D|36|||11500000||1|U|NMC
+Kris Letang|D|39|||6100000||2|U|M-NTC, NMC
+Samuel Girard|D|28|||5000000||1|U|M-NTC
+Ryan Graves|D|31||I|4500000||3|U|M-NTC
+Trevor van Riemsdyk|D|35||I|4000000||2|U
+Kaedan Korczak|D|25|||3250000||4|U
+Spencer Stastney|D|26|||1525000||1|U
+Declan Carlile|D|26|||1500000||2|U
+Ilya Solovyov|D|26|||850000||1|RA
+Arturs Silovs|G|25|||2800000||1|RA
+Sergey Murashov|G|22|||936110||1|R||ew
+Bill Zonnon|RW|20|N||1060000||3|R||ew
+Melvin Fernstrom|RW|20|N||965000||3|R||ew
+Rutger McGroarty|RW|22|N||950000||1|R||ew
+Tristan Broz|C|24|N||942500||1|R||ew
+Atley Calvert|C|23|N||930000||2|R||ew
+Tanner Howe|LW|20|N||929167||3|R||ew
+Mikhail Ilyin|RW|21|N||926667||2|R||ew
+Avery Hayes|RW|24|N||905000||1|R||ew
+Oliver Okuliar|LW|26|N||850000||1|U||w
+David Gustafsson|C|26|N||850000||1|U
+Tomas Galvas|D|20|N|O|1007500||3|R||ew
+Jake Livanavage|D|22|N||975000||1|R10||ew
+Chase Pietila|D|22|N||960000||2|R||ew
+Peyton Kettles|D|19|N|J|958333||3|R||ew
+Finn Harding|D|21|N||955000||2|R||ew
+Harrison Brunicke|D|20|N||929167||3|R||ew
+Owen Pickering|D|22|N||886667||1|R||ew
+Ryan Johnson|D|25|N||875000||2|G6
+Philip Kemp|D|27|N||850000||1|U
+Gabriel D'Aigle|G|19|N||995000||3|R||ew
+Joel Blomqvist|G|24|N||875000||2|RA||w
+Taylor Gauthier|G|25|N||850000||1|G6
+$Parker Wotherspoon|retained salary|500000
+@271,272,272NYR,275,276,277,281,282,283,286,287,273NJD,291,292,293,294,295,296,297,283SJS,282DAL,292EDM,282COL
+#SEA|Seattle Kraken|W|Pacific|#001628|86919464|17080536|0|22|47
+Matty Beniers|C|23|||7142857||5|U
+Chandler Stephenson|C|32|||6250000||5|U|NMC
+Bobby McMann|C|30|||5750000||6|U|NTC
+Jordan Eberle|RW|36|||5500000||2|U|NTC
+Jared McCann|LW|30|||5000000||1|U|M-NTC
+Kaapo Kakko|RW|25|||4525000||2|U
+Mackie Samoskevich|RW|23|||3850000||3|R
+Frederick Gaudreau|C|33|||2100000||2|U|M-NTC
+Jacob Melanson|RW|23||I|1450000||3|R
+Curtis Douglas|C|26|||1250000||2|U
+Ryan Winterton|C|23|||1125000||2|RA
+Ben Meyers|C|27|||1000000||2|U
+Berkly Catton|C|20|||953750||2|R||ew
+Shane Wright|C|22|||886667||1|R||e
+Vince Dunn|D|29|||7350000||1|U|M-NTC
+Brandon Montour|D|32|||7142857||5|U|NTC
+Adam Larsson|D|33|||5250000||3|U|NTC
+Ryan Lindgren|D|28||I|4500000||3|U|M-NTC
+Ryker Evans|D|24|||2050000||1|RA
+Josh Mahura|D|28|||907500||1|U
+Cale Fleury|D|27|||890000||1|U
+Ville Ottavainen|D|24|||850000||1|RA
+Philipp Grubauer|G|34|||5900000||1|U|M-NTC
+Joey Daccord|G|30|||5000000||4|U
+Jake O'Brien|C|19||S|974167||3|R||ew
+Ryden Evers|LW|21|N||1075000||3|R||ew
+Andrei Loshko|C|22|N||970000||2|R||ew
+Nathan Villeneuve|C|20|N||965000||3|R||ew
+Julius Miettinen|C|20|N||965000||3|R||ew
+Devin Kaplan|RW|22|N||946667||1|R10||ew
+Carson Rehkopf|LW|21|N||914167||2|R||ew
+Oscar Fisker Molgaard|C|21|N||914167||2|R||ew
+Eduard Sale|LW|21|N||909167||2|R||ew
+Jagger Firkus|RW|22|N||891667||1|R||ew
+Jani Nyman|RW|22|N||891667||1|R||ew
+Jon-Randall Avon|C|23|N||850000||1|R
+John Hayden|C|31|N||850000||1|U
+Lleyton Roed|LW|24|N||850000||1|RA||w
+Logan Morrison|C|24|N||850000||1|RA
+Alexis Bernier|D|20|N||1003333||3|R||ew
+Tyson Jugnauth|D|22|N||972500||2|R||ew
+Kaden Hammell|D|21|N||965333||2|R||ew
+Caden Price|D|21|N||935556||2|R||ew
+Lukas Dragicevic|D|21|N||914167||2|R||ew
+Ty Nelson|D|22|N||911667||1|R||ew
+Kim Saarinen|G|20|N|O|932500||3|R||ew
+Niklas Kokko|G|22|N||891667||1|R||ew
+Victor Ostman|G|26|N||850000||1|G6
+$Joe Veleno|buyout|295833
+@271,272,273,274,275,276,277,281,282,283,284,285,286,287,271TBLc,283TBL,291,292,293,294,295,296,297,293TBL
+#SJS|San Jose Sharks|W|Pacific|#006D75|94081612|9918388|0|22|42
+Logan Couture|C|37||I|8000000||1|U|M-NTC
+Mason Marchment|LW|31|||6750000||5|U|NTC
+Tyler Toffoli|C|34|||6000000||2|U|NTC
+Alexander Wennberg|C|32||I|6000000||3|U|NTC
+Kiefer Sherwood|LW|31|||5750000||5|U|NTC
+Collin Graf|RW|24|||4250000||3|RA
+Barclay Goodrow|C|33|||3641667||1|U|M-NTC
+Zack Ostapchuk|C|23|||2350000||4|U
+Adam Gaudette|RW|30|||2000000||1|U
+Ty Dellandrea|C|26|||1625000||2|U
+Ivar Stenberg|LW|19|||1075000||3|R||ew
+Michael Misa|C|19|||986250||2|R||ew
+Macklin Celebrini|C|20|||975000||1|R||e|18800000x5
+Will Smith|C|21|||950000||1|R||ew
+Igor Chernyshov|LW|20|||945417||2|R||ew
+Darnell Nurse|D|31|||9250000||4|U|NMC
+Jacob Trouba|D|32|||8250000||4|U|NTC
+Dmitry Orlov|D|35|||6500000||1|U|M-NTC
+Michael Kesselring|D|26|||4500000||3|U
+Sam Dickinson|D|20|||953750||2|R||ew
+Luca Cagnoni|D|21|||920000||1|R||ew
+Nolan Allan|D|23|||875000||2|R
+Alex Nedeljkovic|G|30|||3000000||2|U
+Yaroslav Askarov|G|24|||2000000||1|RA
+Quentin Musty|LW|21||S|909167||2|R||ew
+Kyle Keyser|G|27||S|850000||1|U
+Andre Gasseau|C|23|N||1050000||2|R||ew
+Carson Wetsch|RW|20|N||997500||3|R||ew
+Cameron Lund|C|22|N||941667||1|R||ew
+Filip Bystedt|C|22|N||918333||1|R||ew
+Patrick Giles|RW|26|N||875000||2|U
+Alex Barré-Boulet|C|29|N||875000||2|U
+Jimmy Huntington|C|27|N||850000||1|U
+Ethan Cardwell|RW|24|N||850000||1|RA
+Tye Felhaber|LW|28|N||850000||1|U
+Brett Leason|RW|27|N||850000||1|U
+Eric Pohlkamp|D|22|N||1050000||2|R||ew
+Phillip Sinn|D|22|N||1050000||2|R||ew
+Leo Sahlin Wallenius|D|20|N||965000||3|R||ew
+Mattias Havelid|D|22|N||952500||2|R||ew
+Libor Hajek|D|28|N||850000||1|U
+Eric Comrie|G|31|N||1150000||2|U
+Ilya Samsonov|G|29|N||850000||1|U
+$Erik Karlsson|retained salary|1500000
+$Tomas Hertl|retained salary|1387500
+$Martin Jones|buyout|1666667
+$Marc-Edouard Vlasic|buyout|1166667
+@271,274,276,281,282,286,287,291,292,293,294,295,296,297,287CHI,275CHI
+#STL|St. Louis Blues|W|Central|#002F87|100022605|3032395|3973228|22|47
+Robert Thomas|C|27|||8125000||5|U|NTC
+Pavel Buchnevich|LW|31|||8000000||5|U|NTC
+Dylan Holloway|LW|25|||7750000||5|U
+Mason McTavish|C|23|||7000000||5|U
+Connor McMichael|LW|25|||6750000||6|U
+Pius Suter|C|30|||4125000||1|U
+Jake Neighbours|LW|24|||3750000||1|RA
+Alexey Toropchenko|RW|27||I|2500000||2|U
+Jonatan Berggren|RW|26|||2000000||1|RA
+Ross Johnston|LW|32||I|2000000||3|U
+Jimmy Snuggerud|RW|22|||950000||1|R||ew
+Aleksanteri Kaskimaki|C|22|||945000||1|R||ew
+Otto Stenberg|C|21|||940833||2|R||ew
+Dalibor Dvorsky|RW|21|||909167||2|R||ew
+Dillon Dube|C|28||I|850000||1|U
+Zach Dean|C|23|||850000||1|R
+Philip Broberg|D|25|||8000000||6|U
+Colton Parayko|D|33|||6500000||4|U|NTC
+Cam Fowler|D|34|||6100000||3|U|NTC
+Brandon Carlo|D|29|||3485000|4100000|1|U|M-NTC
+Justin Barron|D|24|||1575000||1|RA
+Adam Jiricek|D|20|||941667||3|R||ew
+Theo Lindstein|D|21|||940833||2|R||ew
+Tyler Tucker|D|26||I|925000||1|U
+Logan Mailloux|D|23||I|850000||1|R
+Jordan Binnington|G|33|||6000000||1|U|M-NTC
+Joel Hofer|G|26|||3400000||1|RA
+Adam Jecho|C|20||S|965000||3|R||ew
+Torey Krug|D|35||L|6500000||1|U|M-NTC
+Félix Trudeau|LW|24|N||1013750||2|R||ew
+Justin Carbonneau|RW|19|N||974167||3|R||ew
+Milton Gastrin|C|19|N|O|974167||3|R||ew
+Nikita Susuyev|RW|21|N||955000||2|R||ew
+Simon Robertsson|RW|23|N||942500||1|R||ew
+Juraj Pekarcik|LW|21|N||938333||2|R||ew
+Jakub Stancl|C|21|N||936111||2|R||ew
+Nathan Walker|LW|32|N||887500||2|U
+Jack Finley|C|24|N||875000||2|RA
+Oskar Sundqvist|C|32|N||850000||1|U
+Dylan Peterson|C|24|N||850000||1|G6||w
+Colin Ralph|D|21|N||1075000||3|R||ew
+Arseni Koromyslov|D|22|N||1013750||2|R||ew
+Lukas Fischer|D|20|N||965000||3|R||ew
+Quinton Burns|D|21|N||938333||2|R||ew
+Michael Buchinger|D|22|N||913333||1|R||ew
+Marc-Andre Gaudet|D|22|N||877500||1|R||e
+Calle Rosen|D|32|N||875000||2|U
+Georgi Romanov|G|26|N||875000||2|U
+Will Cranley|G|24|N||850000||1|G6||w
+$Jonathan Drouin|buyout|1333333
+@271,273,274,275,276,277,281,282,284,285,286,287,274ANA,291,292,293,294,295,296,297
+#TBL|Tampa Bay Lightning|E|Atlantic|#CFCFCF|101246667|2753333|0|23|47
+Nikita Kucherov|RW|33|||9500000||1|U|M-NTC
+Brayden Point|C|30|||9500000||4|U|NMC
+Jake Guentzel|C|32|||9000000||5|U|NMC
+Brandon Hagel|LW|28|||6500000||6|U|NTC
+Anthony Cirelli|C|29|||6250000||5|U|NTC
+Ilya Mikheyev|RW|32|||3850000||4|U|NTC
+Jeffrey Viel|LW|29|||2500000||5|U|NTC
+Yanni Gourde|C|34||I|2333333||5|U|NTC
+Pontus Holmberg|RW|27|||1550000||1|U
+Gage Goncalves|C|25|||1200000||1|RA
+Zemgus Girgensons|C|32|||925000||1|U|M-NTC
+Dominic James|C|24|||910000||1|R||ew
+Conor Geekie|C|22|||886667||1|R||ew
+Scott Sabourin|RW|34|||850000||1|U
+John Carlson|D|36|||8500000||2|U|NMC
+Victor Hedman|D|35|||8000000||3|U|NMC
+J.J. Moser|D|26|||6750000||8|U
+Erik Cernak|D|29|||5200000||5|U|NTC
+Ryan McDonagh|D|37|||4100000||3|U
+Charle-Édouard D'Astous|D|28|||875000||1|U
+Maxwell Crozier|D|26|||875000||2|U
+Emil Lilleberg|D|25|||850000||1|RA
+Andrei Vasilevskiy|G|32|||9500000||2|U|M-NTC
+Dennis Hildeby|G|25|||841667||2|RA
+Benjamin Rautiainen|C|21|N|O|1007500||3|R||ew
+Noah Steen|LW|22|N||972500||2|R||ew
+Ethan Czata|C|19|N|J|965000||3|R||ew
+Tristan Allard|LW|24|N||947500||1|R||ew
+Milo Roelens|C|23|N||945000||1|R||ew
+Gabriel Szturc|C|23|N||945000||1|R||ew
+Connor Kurth|RW|23|N||945000||1|R||ew
+Dylan Duke|LW|23|N||942500||1|R||ew
+Sam O'Reilly|RW|20|N||936056||3|R||ew
+Lucas Mercuri|C|24|N||913750||1|R||ew
+Cooper Flinton|LW|23|N||905000||1|R10||ew
+Ethan Gauthier|RW|21|N||893333||2|R||ew
+Jakob Pelletier|LW|25|N||875000||2|U
+Nick Abruzzese|C|27|N||850000||1|U
+Jansen Harkins|C|29|N||850000||1|U
+Tomas Kralovic|D|21|N||1007500||3|R||ew
+Dyllan Gill|D|22|N||945000||1|R||ew
+Maxim Groshev|D|24|N||875000||2|G6
+Simon Lundmark|D|26|N||850000||1|G6
+Steven Santini|D|31|N||850000||1|U
+Michael Callahan|D|27|N||850000||1|U
+Harrison Meneghin|G|22|N||972500||2|R||ew
+Olivier Rodrigue|G|26|N||850000||1|G6
+Mads Sogaard|G|25|N||850000||1|RA
+@272,274,276,277,281,284,285,286,287,291,292,294,295,296,297,274TOR,283TOR
+#TOR|Toronto Maple Leafs|E|Atlantic|#00205B|100677972|2422028|10973228|22|48
+Auston Matthews|C|29|||13250000||2|U|NMC
+William Nylander|RW|30|||11500000||6|U|NMC
+John Tavares|C|36||I|4380000||3|U|NMC
+Colton Sissons|C|32|||4250000||2|U|M-NTC
+Jack Roslovic|C|29|||4000000||2|U
+Kirill Marchenko|RW|26|||3850000||1|RA|||12500000x6
+Nicholas Paul|LW|31|||3150000||3|U|M-NTC
+Brandon Duhaime|LW|29|||2600000||3|U|NTC
+Teddy Blueger|C|32|||2500000||2|U
+Miles Wood|LW|31||I|2500000||3|U|M-NTC
+Gavin McKenna|LW|18|||1075000||3|R||ew
+Easton Cowan|RW|21|||900000||2|R||ew
+Zack MacEwen|RW|30|||875000||2|U
+Vinni Lettieri|C|31|||850000||1|U
+Bo Groulx|C|26|||812500||1|U
+Darren Raddysh|D|30|||8500000||8|U|NMC
+Morgan Rielly|D|32|||7500000||4|U|NMC
+Chris Tanev|D|36||I|4500000||4|U|NMC
+Jake McCabe|D|33|||4491898||4|U|NTC
+Oliver Ekman-Larsson|D|35|||3500000||2|U|M-NTC
+Nick Blankenburg|D|28|||1400000||1|U
+Troy Stecher|D|32|||1350000||2|U
+Marshall Rifai|D|28|||850000||1|U
+Cade Webber|D|25||I|825000||1|G6||w
+Sergei Bobrovsky|G|38|||7000000||3|U|NMC
+Anthony Stolarz|G|32|||3750000||4|U|M-NTC
+William Villeneuve|D|24||S|875000||2|G6
+Elvis Merzlikins|G|32||L|4428000|5400000|1|U|M-NTC
+Max Domi|C|31||L|3750000||2|U|M-NTC
+Dakota Joshua|C|30||L|3250000||2|U|M-NTC
+Tinus Luc Koblar|C|19|N|O|1028333||3|R||ew
+Borya Valis|RW|22|N||972500||2|R||ew
+Landon Sim|RW|22|N||955000||2|R||ew
+Luke Haymes|C|23|N||937500||1|R||ew
+Miroslav Holinka|C|20|N||918333||2|R10||ew
+Henrik Rybinski|RW|25|N||875000||2|U
+Ryan Tverberg|C|24|N||850000||1|G6
+Brendan Brisson|C|24|N||850000||1|G6
+Aatu Raty|C|23|N||850000||1|RA
+Michael Pezzetta|LW|28|N||812500||1|U
+Hayes Hundley|D|21|N||1010000||3|R||ew
+Vincent Borgesi|D|22|N||987500||2|R||ew
+Blake Smith|D|22|N||962500||2|R||ew
+Ben Danford|D|20|N||936056||3|R||ew
+Noah Chadwick|D|21|N||900556||2|R||ew
+Cole McWard|D|25|N||875000||2|U
+Philippe Myers|D|29|N||850000||1|U
+Dakota Mermis|D|32|N||812500||1|U
+Artur Akhtyamov|G|24|N||900000||3|U||w
+Samuel Hlavaj|G|25|N||850000||1|G6||w
+@272,275,276,277,282,285,286,287,276PHI,291,292,293,294,295,296,297,271COLc,284PIT
+#UTA|Utah Mammoth|W|Central|#004D98|100172892|3827108|0|23|45
+Logan Cooley|C|22|||10000000||8|U
+Nick Schmaltz|C|30|||8000000||8|U|NMC
+Clayton Keller|RW|28|||7150000||2|U|NMC
+Dylan Guenther|RW|23|||7142857||7|U
+Vincent Trocheck|C|33|||5625000||3|U|M-NTC
+Anders Lee|LW|36|||5400000||3|U|NMC
+Barrett Hayton|C|26|||4775000||1|U
+Lawson Crouse|LW|29|||4300000||1|U
+Jack McBain|C|26|||4250000||4|U
+Kevin Stenlund|C|30|||2750000||1|U
+Michael Carcone|LW|30||I|1750000||2|U
+Kailer Yamamoto|RW|28|||1750000||2|U
+Liam O'Brien|C|32|||1000000||1|U
+Danil But|LW|21|||972500||2|R||ew
+Mikhail Sergachev|D|28|||8500000||5|U|NTC
+MacKenzie Weegar|D|32|||6250000||5|U|NTC
+John Marino|D|29|||4400000||1|U|M-NTC||6750000x8
+Nate Schmidt|D|35|||3500000||2|U|M-NTC
+Nick DeSimone|D|31|||1000000||2|U
+Andrew Peeke|D|28|||1000000||1|U
+Dmitriy Simashev|D|21|||972500||2|R||ew
+Artem Duda|D|22|||950000||1|R||ew
+Karel Vejmelka|G|30|||4750000||4|U|M-NTC
+Sebastian Cossa|G|23|||2000000||2|RA
+Maveric Lamoureux|D|22||S|886667||1|R||ew
+Brandon Tanev|LW|34|N||2500000||2|U|M-NTC
+Caleb Desnoyers|C|19|N||1075000||3|R||ew
+Vadim Moroz|RW|22|N||1013750||2|R||ew
+Yegor Borikov|RW|21|N||995000||3|R||ew
+Gabe Smith|C|20|N||962778||3|R||ew
+Miko Matikka|RW|22|N||945000||1|R||ew
+Owen Allard|C|22|N||944167||1|R10||ew
+Tij Iginla|C|20|N||941667||3|R||ew
+Noel Nordh|LW|21|N||935000||2|R||ew
+Sam Lipkin|LW|23|N||926667||1|R||ew
+Julian Lutz|LW|22|N||923333||1|R||ew
+Ben McCartney|LW|25|N||850000||1|G6
+Joshua Roy|RW|23|N||850000||1|R
+Cameron Hebig|C|29|N||812500||1|U
+Gregor Biber|D|20|N||1002500||3|R||ew
+Max Psenicka|D|19|N|J|997500||3|R||ew
+Tomas Lavoie|D|20|N||965000||3|R||ew
+Terrell Goldsmith|D|21|N||936111||2|R10||ew
+Zac Jones|D|26|N||875000||2|U
+Montana Onyebuchi|D|26|N||850000||1|U
+Michael Hrabal|G|21|N||1075000||3|R||ew
+Jaxson Stauber|G|27|N||850000||1|U
+$Oliver Ekman-Larsson|retained salary|650000
+$Brandon Tanev|buried|1275000
+@271,272,274,274EDM,275,275TBL,276,277,281,282,283,284,285,286,287,291,292,293,294,295,296,297,273TORc,281FLAc
+#VAN|Vancouver Canucks|W|Pacific|#00205B|87339885|16660115|0|22|44
+Elias Pettersson|C|27|||11600000||6|U
+Brock Boeser|RW|29|||7250000||6|U|NMC
+Jake DeBrusk|LW|30|||5500000||5|U|NMC
+Marco Rossi|C|25||I|5000000||2|RA
+Filip Chytil|C|27|||4437500||1|U
+Brendan Gallagher|RW|34|||3250000|6500000|1|U|M-NTC, NMC
+Drew O'Connor|LW|28|||2500000||1|U|M-NTC
+Linus Karlsson|C|26|||2250000||2|U
+Paul Cotter|LW|26|||2150000||1|U
+Max Sasson|C|26|||1000000||2|U
+Jonathan Lekkerimaki|RW|22|||918333||1|R||ew
+Liam Ohgren|LW|22|||886667||1|R||ew
+Arshdeep Bains|LW|25|||850000||1|G6
+Filip Hronek|D|28|||7250000||6|U|NMC
+Jamie Oleksiak|D|33|||5000000||2|U|M-NTC
+Luke Schenn|D|36|||2250000||1|U|NMC
+Victor Mancini|D|24|||1000000||2|RA||w
+Tom Willander|D|21|||972500||2|R||ew
+Zeev Buium|D|20|||966500||1|R10||ew|9380000x8
+Elias Pettersson|D|22|||913333||1|R||ew
+Guillaume Brisebois|D|29|||900000||1|U
+Thatcher Demko|G|30||I|8500000||3|U
+Kevin Lankinen|G|31|||4500000||4|U|NMC
+Leevi Merilainen|G|24|||1100000||1|RA
+Mackenzie MacEachern|LW|32||S|850000||1|U
+Akil Thomas|C|26||S|900000||1|U
+Jack Thompson|D|24||S|850000||1|G6
+Adam Novotny|LW|18|N|J|1075000||3|R||ew
+Brandon Buhr|RW|24|N||975000||1|R||ew
+Braeden Cootes|C|19|N||974167||3|R||ew
+Riley Patterson|C|20|N||956667||3|R||ew
+Gabe Chiarot|RW|20|N||950000||3|R||ew
+Ilya Safonov|C|25|N||950000||1|R||ew
+Anri Ravinskis|RW|23|N||947500||1|R||ew
+Ty Mueller|C|23|N||945000||1|R||ew
+Vilmer Alriksson|LW|21|N||931667||2|R||ew
+Trey Fix-Wolansky|RW|27|N||900000||1|U
+Chase Wouters|C|26|N||850000||1|U||w
+Matt Stienburg|C|26|N||850000||1|G6
+Jacob Quillan|C|24|N||850000||1|G6||w
+Sawyer Mynio|D|21|N||906667||2|R||ew
+Kirill Kudryavtsev|D|22|N||900000||1|R||ew
+Jimmy Schuldt|D|31|N||850000||1|U
+Cole Clayton|D|26|N||850000||1|U
+Alexei Medvedev|G|19|N|J|965000||3|R||ew
+Aku Koskenvuo|G|23|N||925000||1|R||ew
+Ty Young|G|22|N||900000||1|R||ew
+Nikita Tolopilo|G|26|N||850000||1|U
+$Tyler Myers|retained salary|1500000
+$Oliver Ekman-Larsson|buyout|4766667
+@271,273,274,275,276,277,281,282,283,284,285,286,287,291,292,293,294,295,296,297,274PIT,284TOR,272SJS,272DAL,294DAL,282CBJ,293COL,275OTT
+#VGK|Vegas Golden Knights|W|Pacific|#B4975A|103211667|788330|11358330|21|48
+Jack Eichel|C|29|||13500000||8|U|NMC
+Mitch Marner|RW|29|||12000000||7|U|NMC
+Mark Stone|RW|34|||9500000||1|U|NMC||9000000x2
+Tomas Hertl|C|32|||8137500||4|U|M-NTC, NMC
+William Karlsson|C|33|||5900000||1|U|M-NTC||6750000x2
+Ivan Barbashev|LW|30|||5000000||2|U|M-NTC
+Nic Dowd|C|36|||3000000||1|U
+Brett Howden|C|28|||2500000||4|U
+Trevor Connelly|LW|20|||974167||3|R||ew
+Braeden Bowman|RW|23|||912500||1|R||ew|3400000x6
+Raphael Lavoie|C|26|||900000||1|G6
+Marc Gatcomb|C|27|||875000||2|U
+Rasmus Andersson|D|29|||8500000||7|U|NTC
+Shea Theodore|D|31|||7425000||6|U|NTC
+Noah Hanifin|D|29|||7350000||6|U|NTC
+Jeremy Lauzon|D|29|||4000000||6|U|NTC
+Brayden McNabb|D|35|||3650000||2|U|M-NTC
+Dylan Coghlan|D|28|||875000||2|U
+Ville Heinola|D|25|||850000||1|RA
+Parker Wotherspoon|D|29||I|500000|1000000|1|U
+Adin Hill|G|30|||6250000||5|U|M-NTC
+Carter Hart|G|28|||2000000||1|U
+Lukas Cormier|D|24||S|850000||1|G6
+Alex Pietrangelo|D|36||E|8800000||1|U|NMC
+Victor Olofsson|LW|31||L|1638330||1|U
+Kai Uchacz|C|23||L|920000||1|R||ew
+Alex Weiermair|C|21|N||975000||3|R||ew
+Tuomas Uronen|RW|21|N||952500||2|R||ew
+Trent Swick|LW|22|N||950000||2|R||ew
+Jackson Hallum|LW|24|N||942500||1|R||ew
+Jordan Gustafson|C|22|N||905000||1|R10||ew
+Mathieu Cataford|C|21|N||901667||2|R||ew
+Tanner Laczynski|C|29|N||900000||3|U
+Ben Hemmerling|RW|22|N||896111||1|R||ew
+Matyas Sapovaliv|C|22|N||878333||1|R||ew
+Joe Fleming|RW|23|N||850000||1|R
+Jakub Demek|C|23|N||850000||1|R
+Jonas Rondbjerg|RW|27|N||850000||1|U
+Alexander Holtz|RW|24|N||835352||1|RA
+Jeremy Davies|D|29|N||1150000||1|U
+Juho Piiparinen|D|18|N|J|1075000||3|R||ew
+Bronson Ride|D|21|N||970500||3|R||ew
+Adam Ginning|D|26|N||875000||2|U
+Antti Tuomisto|D|25|N||875000||2|U
+Viliam Kmec|D|22|N||858333||1|R10||ew
+Jaycob Megna|D|33|N||850000||1|U
+Pavel Moysevich|G|22|N||980000||3|R||ew
+Cameron Whitehead|G|23|N||937500||1|R||ew
+Carl Lindbom|G|23|N||900000||3|R||w
+@273,274,275,276,281,284,285,286,287,291,293,294,295,296,297,281NYRc,273MTL,283FLA,293DET,277DET
+#WPG|Winnipeg Jets|W|Central|#041E42|92834167|11165833|0|22|43
+Kyle Connor|LW|29|||12000000||8|U|NMC
+Mark Scheifele|C|33|||8500000||5|U|NMC
+Gabriel Vilardi|C|27|||7500000||5|U
+Cole Perfetti|C|24|||6000000||5|U
+Adam Lowry|C|33|||5000000||5|U|NMC
+Nino Niederreiter|RW|34|||4000000||1|U
+Alex Iafallo|LW|32|||3666667||2|U
+Vladislav Namestnikov|C|33||I|3000000||1|U
+Morgan Barron|C|27|||1850000||1|U
+Cole Koepke|LW|28|||1450000||2|U
+Viggo Bjorck|C|18|||1075000||3|R||ew
+Brayden Yager|C|21|||940833||2|R||ew
+Isak Rosen|RW|23|||925000||2|R
+Brad Lambert|C|22|||886667||1|R||e
+Neal Pionk|D|31|||7000000||5|U|M-NTC
+Josh Morrissey|D|31||I|6250000||2|U|M-NTC
+Dylan Samberg|D|27|||5750000||2|U
+Dylan DeMelo|D|33|||4900000||2|U
+Mario Ferraro|D|28|||4000000||3|U|M-NTC
+Haydn Fleury|D|30|||950000||1|U
+Tyrel Bauer|D|24|||875000||2|G6
+Elias Salomonsson|D|22||I|865000||1|R||ew
+Jack St. Ivany|D|27|||850000||1|U
+Stuart Skinner|G|27|||3750000||2|U
+Clay Stevenson|G|27|||850000||1|U
+Garrett Brown|D|22||S|1050000||2|R||ew
+Connor Hellebuyck|G|33||U|8500000||5|U|NMC
+Jacob Julien|C|22|N||957500||2|R||ew
+Kieron Walton|C|20|N||955556||3|R||ew
+Kevin He|LW|20|N||932500||3|R||ew
+Lucas Wahlin|RW|25|N||910000||1|R||w
+Colby Barlow|LW|21|N||909167||2|R||ew
+Fabian Wagner|C|22|N||905556||1|R||ew
+Danil Zhilkin|C|22|N||878333||1|R||e
+Nikita Chibrikov|RW|23|N||875000||2|R
+Walker Duehr|RW|28|N||875000||2|U
+Noah Gregor|LW|28|N||850000||1|U
+Parker Ford|C|26|N||812500||1|G6
+Alfons Freij|D|20|N||965000||3|R||ew
+Henry Thrun|D|25|N||850000||1|RA
+Isaak Phillips|D|25|N||812500||1|G6
+Thomas Milic|G|23|N||916667||1|R||ew
+Domenic DiVincentiis|G|22|N||905556||1|R||ew
+Isaac Poulter|G|25|N||850000||1|G6||w
+@271,273c,275,276,277,281,282,283,284,285,286,287,291,292,293,294,295,296,297,272BUF
+#WSH|Washington Capitals|E|Metropolitan|#041E42|99901355|3123228|3973228|21|45
+Alex Tuch|RW|30|||10500000||8|U|NMC
+Pierre-Luc Dubois|C|28||I|8500000||5|U|NMC
+Jordan Kyrou|RW|28|||8125000||5|U|NTC
+Tom Wilson|RW|32|||6540000||5|U|M-NTC
+Boone Jenner|C|33|||5750000||4|U|M-NTC
+Dylan Strome|C|29|||5000000||2|U
+Alex Ovechkin|LW|41|||4250000||1|U|NMC
+Aliaksei Protas|LW|25|||3375000||3|U
+Anthony Beauvillier|RW|29|||2750000||1|U
+Ethen Frank|RW|28|||2000000||2|U
+Ryan Leonard|RW|21|||950000||1|R||ew|10500000x8
+Ilya Protas|LW|20|||932500||3|R||ew
+Ivan Miroshnichenko|LW|22|||925000||2|R
+Justin Sourdif|C|24||I|825000||1|RA|||6350000x8
+Jakob Chychrun|D|28|||9000000||7|U|NMC
+Martin Fehervary|D|27|||6000000||7|U
+Matt Roy|D|31|||5750000||4|U
+Vincent Desharnais|D|30|||4200000||4|U
+Timothy Liljegren|D|27|||3250000||2|U
+Cole Hutson|D|20|||952083||2|R||ew
+Dylan McIlrath|D|34|||850000||1|U
+Logan Thompson|G|29|||5850000||5|U|M-NTC
+Charlie Lindgren|G|32|||3000000||2|U
+Patrick Thomas|C|22||S|965833||2|R||ew
+Rasmus Sandin|D|26||L|4600000||3|U
+Oliver Suvanto|C|18|N|O|1075000||3|R||ew
+Theodor Niederbach|C|24|N||1025000||1|R||w
+Petr Sikora|C|20|N||995000||3|R||ew
+Tyler Kopff|C|23|N||975000||1|R||ew
+Lynden Lakovic|LW|19|N||974167||3|R||ew
+Terik Parascak|RW|20|N||941667||3|R||ew
+Eriks Mateiko|LW|20|N||932500||3|R||ew
+Bogdan Trineyev|RW|24|N||900000||2|G6
+Andrew Cristall|LW|21|N||889167||2|R||ew
+Ludwig Persson|LW|23|N||865000||1|R||e
+Alexander Suzdalev|LW|22|N||865000||1|R||ew
+Spencer Smallman|RW|30|N||850000||1|U
+Josh Dunne|C|27|N||850000||1|U
+Jonny Brodzinski|C|33|N||850000||1|U
+Ryan Chesley|D|22|N||945833||2|R||ew
+Leon Muggli|D|20|N||932500||3|R||ew
+Cam Allen|D|21|N||930000||2|R||ew
+David Gucciardi|D|24|N||930000||1|R||ew
+Justin Holl|D|34|N||900000||1|U
+Louie Belpedio|D|30|N||850000||1|U
+Jacob MacDonald|D|33|N||850000||1|U
+Mitchell Gibson|G|27|N||812500||1|U
+@271,272,274,275,277,281,282,283,284,285,286,287,291,292,293,294,295,296,297,277OTT,292VGK,273ANA,273PIT,274NJD</script>
+<script type="text/plain" id="numdata">ANA|#B5985A|46|3086677931|91,61,64,17,77,18,25,39,40,95,45,28,12,13,42,2,98,4,3,14,55,67,47,1,33,19,43,75,58,87,52,57,60,48,24,41,38,59,63,50,37,26,34,31,78,68
+BOS|#000000|43|2023358210|88,28,10,11,39,18,84,52,47,44,92,93,51,73,27,91,17,6,75,45,42,1,30,,56,76,79,50,48,62,74,49,21,81,20,86,58,43,38,80,60,85,31
+BUF|#FFB81C|46|2320467572|9,6,72,91,71,17,19,22,29,15,10,94,20,86,48,26,25,23,8,21,46,73,24,44,1,34,92,3,70,45,54,52,49,55,41,27,43,64,62,57,5,76,82,50,34,31
+CAR|#000000|44|454728438|20,27,37,24,22,53,82,71,48,11,28,77,50,36,44,76,19,74,26,4,5,8,6,52,32,49,73,29,45,46,79,54,64,,75,67,62,72,47,91,7,55,80,39
+CBJ|#CE1126|48|3555698440|19,89,43,3,83,23,4,10,24,91,94,58,93,8,9,78,15,44,36,7,2,5,73,33,95,21,20,76,62,53,93,92,71,82,22,67,12,18,56,57,84,54,6,74,,35,31,29
+CGY|#F1BE48|43|407424628|10,27,17,86,22,16,11,76,72,43,38,78,92,61,29,18,71,7,55,28,44,19,37,32,1,47,51,,39,49,45,65,15,6,93,94,67,52,48,20,41,40,35
+CHI|#000000|45|2837273133|98,88,91,59,86,8,12,26,22,80,16,20,11,24,94,72,28,44,14,55,38,6,30,40,75,90,83,79,68,76,90,84,67,92,,,25,12,47,61,51,,,31,33
+COL|#236192|43|1202332351|29,88,11,92,91,62,71,10,17,9,13,68,54,8,7,70,27,42,47,84,39,41,49,25,14,,85,34,18,16,22,57,44,2,45,89,3,86,67,5,,30,50
+DAL|#8F8F8C|45|870458102|21,96,91,24,53,18,12,22,49,25,14,15,57,10,55,4,23,5,57,6,20,29,1,34,36,95,46,52,67,47,48,62,60,39,43,37,44,40,27,41,35,42,28,50,33
+DET|#FFFFFF|46|2187813909|71,23,93,18,37,33,27,22,55,28,58,29,92,34,15,53,72,8,25,20,42,44,24,54,36,80,70,38,,,74,41,79,57,65,43,47,73,49,17,78,84,56,31,35,32
+EDM|#FF4C00|47|391135910|29,97,18,93,16,10,92,42,13,34,21,53,43,26,46,19,2,96,5,14,6,85,49,35,27,37,30,22,75,56,81,57,70,64,41,23,38,36,44,78,73,82,61,40,33,32,90
+FLA|#041E42|47|2468235374|19,13,8,9,23,63,15,27,21,95,79,20,14,29,3,5,42,77,6,7,26,25,40,31,16,12,,38,59,85,97,28,17,11,44,18,76,54,74,36,51,22,96,4,73,35,80
+LAK|#A2AAAD|49|3418694763|10,9,22,55,12,14,56,21,40,90,36,25,79,17,15,47,8,92,5,44,2,6,64,35,31,51,73,,87,54,86,34,88,89,29,74,73,42,82,68,80,60,78,81,27,7,50,40,1
+MIN|#A6192E|45|2653422598|97,12,14,17,38,13,47,10,20,78,49,61,22,71,19,7,43,46,25,3,24,48,82,26,55,30,31,32,,58,,37,23,76,15,18,28,,6,,49,76,,95,50
+MTL|#192168|44|422070925|14,13,20,17,24,76,77,15,71,85,22,91,63,93,53,48,8,21,45,72,42,35,75,32,94,82,96,54,46,62,49,60,37,41,88,40,65,61,68,64,74,79,44,34
+NJD|#000000|45|2397681004|28,86,63,13,39,91,81,17,16,77,12,70,93,7,43,22,5,8,71,47,34,50,1,24,72,11,29,57,20,75,89,36,67,37,21,10,52,55,73,59,56,38,18,33,31
+NSH|#041E42|46|2123948936|9,91,81,22,90,18,79,14,21,51,84,71,49,59,76,41,46,48,3,47,2,85,74,29,32,62,44,11,61,19,53,93,60,45,25,38,27,89,17,40,54,12,92,50,57,30
+NYI|#F47D30|47|3280414668|13,14,10,81,44,21,92,11,53,63,51,38,64,32,26,28,6,3,77,24,8,48,4,30,40,18,57,59,76,72,67,61,52,45,25,43,37,,,42,36,39,74,41,41,60,70
+NYR|#CE1126|47|2702994024|16,93,10,13,28,50,17,14,24,73,42,94,53,37,23,44,5,4,26,12,60,70,33,41,38,75,31,90,46,57,62,95,49,85,54,47,15,25,71,83,45,27,21,6,29,18,98
+OTT|#000000|48|2611942472|18,12,24,27,95,19,20,37,71,22,28,21,23,34,42,85,72,10,2,43,26,33,5,35,30,55,91,79,63,,62,68,92,16,54,53,73,78,82,98,56,76,15,58,32,39,31,31
+PHI|#000000|47|2232618566|46,11,14,74,22,27,71,52,58,17,54,94,20,39,86,10,78,9,6,8,55,24,5,44,19,59,53,80,,,45,91,,,77,88,21,23,18,25,29,42,41,55,3,64,35
+PIT|#000000|48|849255239|87,59,71,17,67,62,41,18,14,46,19,16,22,25,81,65,58,49,27,57,6,24,72,7,37,1,23,43,2,26,84,40,70,85,8,13,32,4,44,63,50,45,38,3,52,35,30,33
+SEA|#355464|48|575179721|10,9,74,7,19,84,11,89,63,42,26,59,27,51,29,62,6,55,41,28,8,46,31,35,44,91,70,90,49,68,74,78,82,57,38,16,15,85,96,43,83,47,48,92,24,45,39,1
+SJS|#EA7200|43|3162404871|39,27,73,21,44,51,23,63,81,10,41,77,71,2,92,25,65,9,7,6,42,5,33,30,13,36,26,62,46,18,54,16,15,56,28,17,48,,72,22,24,1,35
+STL|#FCB514|49|2767955766|18,89,81,83,77,22,63,13,29,49,21,41,28,15,65,52,6,55,17,25,72,36,4,75,23,50,30,84,47,,68,,53,80,85,93,26,37,70,32,51,48,94,42,62,45,43,35,31
+TBL|#002868|48|1094052380|86,21,59,38,71,95,25,37,29,93,28,17,94,49,74,77,90,81,27,51,24,78,88,35,41,67,45,13,36,96,68,53,23,75,50,89,22,80,10,82,57,52,7,16,79,1,32,30
+TOR|#003a79|50|2968676890|34,88,91,15,96,86,20,24,73,18,92,53,19,71,29,43,44,8,22,95,3,28,83,52,72,41,76,90,11,81,,,82,43,98,58,77,91,54,61,,,,38,58,4,51,36,70,35
+UTA|#000000|47|4291567796|92,8,9,11,16,72,27,67,22,82,53,56,38,50,98,52,6,88,57,20,26,84,70,33,10,13,,,,93,49,37,77,45,71,43,62,89,78,,,75,54,15,79,,35
+VAN|#00843D|48|1613536620|40,6,74,23,77,7,18,94,47,63,88,92,13,17,4,2,90,5,8,25,55,35,32,31,20,26,26,,,86,68,65,24,26,39,46,64,21,83,26,45,59,48,34,,36,85,60
+VGK|#333F42|49|3912439678|9,93,61,48,71,49,26,21,24,42,36,17,4,27,15,5,3,52,14,29,33,79,51,7,95,77,18,37,76,59,38,8,28,63,25,50,13,46,10,84,56,57,73,6,74,88,83,39,30
+WPG|#004C97|44|589887429|81,55,13,91,17,62,9,7,36,45,61,29,27,93,4,44,54,2,38,24,77,57,6,74,33,,37,67,76,46,,39,58,53,90,71,73,25,48,8,3,32,50,30
+WSH|#C8102E|47|2577457279|89,80,25,43,22,17,8,21,72,53,9,62,63,34,6,42,3,73,27,44,52,48,79,49,38,,,,41,,18,73,87,28,85,91,81,40,76,22,45,54,93,4,37,4,78</script>
+<script>
+(function(){
+const CEIL=104000000, FLOOR=76900000, RET_MAX_TOTAL=CEIL*0.15;
+const ST={I:'IR',L:'LTIR',S:'SOIR',E:'SEIR',O:'Loan',J:'Junior',X:'Inactive',U:'Suspended'};
+const EX={U:'UFA',R:'RFA',RA:'RFA·arb',R10:'RFA 10.2c',G6:'UFA G6'};
+const RELIEVED=new Set(['L','E']);
+const ORD=['','1st','2nd','3rd','4th','5th','6th','7th'];
+const DIV={A:'Atlantic',M:'Metropolitan',C:'Central',P:'Pacific'};
+
+// ---------- parse ----------
+const T={}; let cur=null;
+document.getElementById('capdata').textContent.trim().split('\n').forEach(l=>{
+  if(!l) return;
+  if(l[0]==='#'){const f=l.slice(1).split('|');cur={tri:f[0],name:f[1],conf:f[2]==='E'?'Eastern':'Western',div:f[3],color:f[4],capHit:+f[5],capSpace:+f[6],ltir:+f[7],roster:+f[8],contracts:+f[9],players:[],dead:[],picks:[]};T[cur.tri]=cur;return;}
+  if(l[0]==='$'){const f=l.slice(1).split('|');cur.dead.push({name:f[0],type:f[1],amt:+f[2]});return;}
+  if(l[0]==='@'){l.slice(1).split(',').forEach((tok,i)=>{const m=/^(\d\d)(\d)([A-Z]{3})?(c)?$/.exec(tok);if(!m)return;cur.picks.push({id:cur.tri+':k'+i,year:2000+ +m[1],round:+m[2],orig:m[3]||cur.tri,cond:!!m[4]});});return;}
+  const f=l.split('|');const cap=+f[5];const full=f[6]?+f[6]:cap;
+  const p={id:cur.tri+':'+cur.players.length,name:f[0],pos:f[1],age:f[2]?+f[2]:null,grp:f[3]==='N'?'N':'R',st:f[4]||'',cap,full,yrs:+f[7],ex:f[8]||'',cl:f[9]||'',elc:(f[10]||'').includes('e'),wx:(f[10]||'').includes('w'),ext:null};
+  if(f[11]){const e=f[11].split('x');p.ext={cap:+e[0],yrs:+e[1]};}
+  p.posg=p.pos==='G'?'G':p.pos==='D'?'D':'F';
+  p.prevRet=full>cap?Math.round(100-cap/full*100):0;
+  cur.players.push(p);
+});
+document.getElementById('numdata').textContent.trim().split('\n').forEach(l=>{
+  const f=l.split('|'); const t=T[f[0]]; if(!t) return; t.color2=f[1];
+  f[4].split(',').forEach((n,i)=>{ if(t.players[i]) t.players[i].num=n===''?null:n; });
+});
+const TRIS=Object.keys(T).sort((a,b)=>T[a].name.localeCompare(T[b].name));
+T.MTL.name='Montréal Canadiens';
+const byId=id=>{const [tri,rest]=id.split(':');const t=T[tri];if(!t)return null;if(rest[0]==='k')return t.picks.find(k=>k.id===id);return t.players[+rest];};
+
+// ---------- helpers ----------
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function money(v,opt){ if(v==null)return'—'; const neg=v<0; v=Math.abs(v); let s;
+  if(v>=1e6){s=(v/1e6).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');s='$'+s+'M';}
+  else if(v>=1000){s='$'+Math.round(v/1000)+'K';} else s='$'+v;
+  return (neg?'−':(opt&&opt.sign&&v>0?'+':''))+s; }
+function exp(p){const y=2026+p.yrs;return {y:y, lbl:"'"+String(y).slice(2)};}
+const pickLabel=k=>`${k.year} ${ORD[k.round]}`+(k.orig?` (${k.orig})`:'')+(k.cond?' · cond.':'');
+const relieved=p=>p.grp==='R'&&RELIEVED.has(p.st);
+const active=p=>p.grp==='R'&&(p.st===''||p.st==='U'||p.st==='X');
+const plabel=p=>p.name+(p.num?` | #${p.num}`:'');
+const TWO=['Maple Leafs','Blue Jackets','Golden Knights','Red Wings'];
+function splitName(name){const two=TWO.find(n=>name.endsWith(n));const nick=two||name.split(' ').slice(-1)[0];return {city:name.slice(0,name.length-nick.length).trim(),nick};}
+function lum(hex){const h=hex.replace('#','');const c=[0,2,4].map(i=>{let v=parseInt(h.substr(i,2),16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+function jerseySVG(t,p,uid){
+  const base=t.color||'#555', trim=t.color2&&t.color2.toLowerCase()!==base.toLowerCase()?t.color2:(lum(base)>.5?'#111111':'#ffffff');
+  const ink=lum(base)>.45?'#111111':'#ffffff';
+  const twill=Math.abs(lum(trim)-lum(base))>.08?trim:(ink==='#ffffff'?'#111111':'#ffffff');
+  const F="Graduate, 'Saira Condensed', Georgia, serif";
+  let plate, big, bigSize;
+  if(p){ plate=(p.name.split(' ').slice(-1)[0]||'').toUpperCase(); big=p.num||''; bigSize=big.length>1?66:74; }
+  else { const s=splitName(t.name); plate=s.city.toUpperCase(); big=s.nick.toUpperCase(); bigSize=Math.min(30,Math.floor(150/(big.length*.78))); }
+  const plateSize=Math.min(16,Math.floor(124/Math.max(1,plate.length*.72)));
+  const body="M78 18 Q110 34 142 18 L186 34 Q206 42 210 64 L218 128 L182 136 L176 96 L174 204 Q110 214 46 204 L44 96 L38 136 L2 128 L10 64 Q14 42 34 34 Z";
+  const bigY=p?156:140;
+  const bigTxt=(extra)=>`<text x="110" y="${bigY}" text-anchor="middle" font-family="${F}" font-size="${bigSize}" ${extra}>${esc(big)}</text>`;
+  return `<svg viewBox="0 0 220 236" role="img" aria-label="${esc(p?plabel(p):t.name)} jersey">
+  <defs>
+    <clipPath id="c${uid}"><path d="${body}"/></clipPath>
+    <linearGradient id="s${uid}" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".32"/><stop offset=".22" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".07"/><stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>
+    <linearGradient id="v${uid}" y1="0" y2="1" x1="0" x2="0"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
+    <pattern id="m${uid}" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".7" fill="#000" fill-opacity=".09"/></pattern>
+    <path id="a${uid}" d="M50 84 Q110 62 170 84"/>
+  </defs>
+  <path d="M110 22 V10 a7 7 0 1 1 7 -7" fill="none" stroke="#9aa3ad" stroke-width="2.6" stroke-linecap="round"/>
+  <g transform="translate(0,16)">
+    <g clip-path="url(#c${uid})">
+      <rect width="220" height="220" fill="${base}"/>
+      <path d="M0 0 H220 V44 Q110 62 0 44 Z" fill="${trim}"/>
+      <rect x="0" y="100" width="46" height="9" fill="${trim}"/><rect x="0" y="112" width="46" height="4" fill="${ink}" opacity=".75"/>
+      <rect x="174" y="100" width="46" height="9" fill="${trim}"/><rect x="174" y="112" width="46" height="4" fill="${ink}" opacity=".75"/>
+      <rect x="0" y="176" width="220" height="10" fill="${trim}"/><rect x="0" y="189" width="220" height="4" fill="${ink}" opacity=".75"/>
+      <g stroke="#fff" stroke-opacity=".35" stroke-width=".8" stroke-dasharray="2.5 2" fill="none">
+        <path d="M0 175 H220 M0 187 H220 M0 99 H46 M174 99 H220 M0 110 H46 M174 110 H220"/>
+        <path d="M0 45 Q110 63 220 45"/>
+      </g>
+      <rect width="220" height="220" fill="url(#m${uid})"/>
+      <path d="M86 70 Q80 140 88 210 M134 70 Q140 140 132 210" stroke="#000" stroke-opacity=".07" stroke-width="10" fill="none"/>
+      <rect width="220" height="220" fill="url(#s${uid})"/>
+      <rect width="220" height="220" fill="url(#v${uid})"/>
+    </g>
+    <path d="M78 18 Q110 36 142 18" fill="none" stroke="${trim}" stroke-width="7" stroke-linecap="round"/>
+    <path d="M78 18 Q110 36 142 18" fill="none" stroke="#000" stroke-opacity=".25" stroke-width="1"/>
+    <path d="${body}" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="1.4"/>
+    <text font-family="${F}" font-size="${plateSize}" letter-spacing="1.6" fill="${ink}" stroke="${twill}" stroke-width="1.2" paint-order="stroke"><textPath href="#a${uid}" startOffset="50%" text-anchor="middle">${esc(plate)}</textPath></text>
+    ${big?bigTxt(`fill="${twill}" stroke="${twill}" stroke-width="${p?11:5}" stroke-linejoin="round"`)+bigTxt(`fill="${ink}" stroke="${base}" stroke-width="${p?4.5:2}" stroke-linejoin="round" paint-order="stroke"`):''}
+  </g>
+</svg>`;}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),1800);}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+
+// ---------- state ----------
+const SAMPLE={a:'TOR',b:'VAN',items:[{side:'a',id:null,find:['TOR','Morgan Rielly'],ret:0},{side:'a',id:null,find:['TOR','k:2029:1'],ret:0},{side:'b',id:null,find:['VAN','Filip Hronek'],ret:0}],sample:true};
+function resolveSample(s){s.items=s.items.map(it=>{if(it.id)return it;const t=T[it.find[0]];let id=null;
+  if(it.find[1].startsWith('k:')){const [,y,r]=it.find[1].split(':');const k=t.picks.find(k=>k.year==+y&&k.round==+r&&k.orig===t.tri);id=k&&k.id;}
+  else{const p=t.players.find(p=>p.name===it.find[1]);id=p&&p.id;}
+  return id?{side:it.side,id,ret:it.ret}:null;}).filter(Boolean);return s;}
+let S=store.get('tm.state',null);
+if(!S||!T[S.a]||!T[S.b]) S=resolveSample(JSON.parse(JSON.stringify(SAMPLE)));
+S.items=(S.items||[]).filter(it=>byId(it.id));
+S.ui=Object.assign({a:{tab:'roster',q:'',pos:'all'},b:{tab:'roster',q:'',pos:'all'}},S.ui||{});
+const other=s=>s==='a'?'b':'a';
+S.jersey=Object.assign({a:null,b:null},S.jersey||{});
+function jerseyPlayer(side){let id=S.jersey[side];
+  if(!id||id.split(':')[0]!==S[side]||!inTrade(id)){const rest=S.items.filter(it=>it.side===side&&byId(it.id)&&byId(it.id).name);id=rest.length?rest[rest.length-1].id:null;}
+  const p=id&&byId(id);return p&&p.name?p:null;}
+function save(){store.set('tm.state',{a:S.a,b:S.b,items:S.items,sample:S.sample,ui:S.ui,jersey:S.jersey});}
+
+function inTrade(id){return S.items.find(it=>it.id===id);}
+function toggle(side,id){
+  const i=S.items.findIndex(it=>it.id===id);
+  if(i>=0)S.items.splice(i,1); else S.items.push({side,id,ret:0});
+  const x=byId(id);
+  if(i<0&&x&&x.name) S.jersey[side]=id;
+  else if(S.jersey[side]===id){const rest=S.items.filter(it=>it.side===side&&byId(it.id)&&byId(it.id).name);S.jersey[side]=rest.length?rest[rest.length-1].id:null;}
+  S.sample=false; render();
+}
+
+// ---------- evaluation ----------
+function evalSide(side){
+  const t=T[S[side]], o=other(side);
+  const out=S.items.filter(it=>it.side===side), inn=S.items.filter(it=>it.side===o);
+  let save=0,addIn=0,retCharge=0,rosterD=0,contractD=0,newRet=0;
+  const warns=[],errs=[];
+  out.forEach(it=>{const x=byId(it.id);if(!x.name)return;
+    contractD--; if(active(x))rosterD--;
+    if(x.grp==='R'&&!relieved(x)) save+=x.cap;
+    if(it.ret>0){retCharge+=Math.round(x.cap*it.ret/100);newRet++;}
+    if(/NMC|NTC|NMC/.test(x.cl)) warns.push(`${x.name} has ${x.cl.includes('NMC')?'a no-move':'a no-trade'} clause (${x.cl}) and would have to approve the deal.`);
+  });
+  inn.forEach(it=>{const x=byId(it.id);if(!x.name)return;
+    contractD++; if(active(x))rosterD++;
+    if(x.grp==='R'&&!relieved(x)) addIn+=Math.round(x.cap*(1-(it.ret||0)/100));
+    if(relieved(x)) warns.push(`${x.name} is on ${ST[x.st]}; his ${money(x.cap)} counts once he's activated.`);
+  });
+  const newCap=t.capHit-save+addIn+retCharge;
+  const delta=newCap-t.capHit;
+  const newSpace=t.capSpace-delta;
+  const newRoster=t.roster+rosterD, newContracts=t.contracts+contractD;
+  const oldRetN=t.dead.filter(d=>d.type==='retained salary').length;
+  const oldRetAmt=t.dead.filter(d=>d.type==='retained salary').reduce((a,d)=>a+d.amt,0);
+  const retN=oldRetN+newRet, retAmt=oldRetAmt+retCharge;
+  const checks=[];
+  const any=out.length||inn.length;
+  if(newSpace<0) checks.push(['bad',`Over the cap by ${money(-newSpace)} after the trade.`]);
+  else checks.push(['ok',`Cap compliant with ${money(newSpace)} in space.`]);
+  if(newCap<FLOOR) checks.push(['warn',`Payroll ${money(newCap)} sits below the $76.9M floor.`]);
+  if(newRoster>23) checks.push(['bad',`Active roster would be ${newRoster} (max 23).`]);
+  else checks.push(['ok',`Active roster ${newRoster}/23.`]);
+  if(newContracts>50) checks.push(['bad',`${newContracts} standard contracts (max 50).`]);
+  else checks.push(['ok',`Contracts ${newContracts}/50.`]);
+  if(retN>3) checks.push(['bad',`${retN} retained contracts (max 3).`]);
+  else if(newRet) checks.push(['ok',`Retained contracts ${retN}/3.`]);
+  if(retAmt>RET_MAX_TOTAL) checks.push(['bad',`Retained salary totals ${money(retAmt)} (max ${money(RET_MAX_TOTAL)}).`]);
+  warns.forEach(w=>checks.push(['warn',w]));
+  const legal=!checks.some(c=>c[0]==='bad');
+  return {t,out,inn,save,addIn,retCharge,newCap,delta,newSpace,newRoster,newContracts,checks,legal,any};
+}
+
+// ---------- team board ----------
+function teamOptions(sel,dis){
+  let h='';['Eastern','Western'].forEach(c=>{
+    const divs=[...new Set(TRIS.filter(x=>T[x].conf===c).map(x=>T[x].div))].sort();
+    divs.forEach(d=>{h+=`<optgroup label="${c} · ${d}">`;
+      TRIS.filter(x=>T[x].conf===c&&T[x].div===d).forEach(x=>{h+=`<option value="${x}"${x===sel?' selected':''}${x===dis?' disabled':''}>${esc(T[x].name)}</option>`;});
+      h+='</optgroup>';});
+  });return h;}
+
+function gauge(cap,after){
+  const max=112e6, pct=v=>Math.max(0,Math.min(100,v/max*100));
+  const v=after==null?cap:after;
+  return `<div class="gauge" role="img" aria-label="Cap used ${money(v)} of ${money(CEIL)}">
+    <div class="fill${v>CEIL?' over':''}" style="width:${pct(v)}%"></div>
+    <div class="tick floor" style="left:${pct(FLOOR)}%"></div>
+    <div class="tick" style="left:${pct(CEIL)}%"></div></div>
+    <div class="gauge-legend"><span>$0</span><span>floor $76.9M</span><span>cap $104M</span><span>$112M</span></div>`;}
+
+function playerRow(p){
+  const sel=!!inTrade(p.id); const e=exp(p);
+  const b=[];
+  if(p.cl) b.push(`<span class="badge cl" title="Trade protection">${esc(p.cl)}</span>`);
+  if(p.st&&ST[p.st]) b.push(`<span class="badge inj">${ST[p.st]}</span>`);
+  if(p.elc) b.push(`<span class="badge elc">ELC</span>`);
+  if(p.prevRet) b.push(`<span class="badge ret" title="Already retained by a previous team">${p.prevRet}% ret.</span>`);
+  const ext=p.ext?`<span title="Extension already signed">ext ${money(p.ext.cap)} × ${p.ext.yrs}</span>`:'';
+  return `<div class="row${sel?' sel':''}" data-id="${p.id}" role="button" tabindex="0" aria-pressed="${sel}">
+    <button class="add" type="button" tabindex="-1" aria-hidden="true">${sel?'✓':'+'}</button>
+    <div style="min-width:0;display:grid;gap:2px">
+      <div class="pname">${esc(p.name)}${p.num?`<span class="pnum"> | #${esc(p.num)}</span>`:''}</div>
+      <div class="pline"><span>${p.pos}${p.age?' · '+p.age:''}</span>${b.join('')}${ext}</div>
+    </div>
+    <div class="pcap"><div class="amt">${money(p.cap)}</div><div class="term">${p.yrs} yr${p.yrs>1?'s':''} · ${EX[p.ex]||p.ex} ${e.lbl}</div></div>
+  </div>`;}
+
+function rackHTML(side,t,front){
+  const ps=S.items.filter(it=>it.side===side).map(it=>byId(it.id)).filter(x=>x&&x.name);
+  if(!front||!ps.length) return `<figure class="jersey"><div class="stall"><div class="hang front">${jerseySVG(t,null,side+'f')}</div></div>
+    <figcaption><b>${esc(t.name)}</b><span>Add a player to see his sweater</span></figcaption></figure>`;
+  const others=ps.filter(x=>x!==front).slice(-2).reverse();
+  const backs=others.map((x,i)=>`<button type="button" class="hang back ${i?'r':'l'}" data-front="${x.id}" aria-label="Show ${esc(plabel(x))}">${jerseySVG(t,x,side+'b'+i)}</button>`).join('');
+  const more=ps.length-1-others.length;
+  const idx=ps.indexOf(front)+1;
+  return `<figure class="jersey"><div class="stall">${backs}<div class="hang front">${jerseySVG(t,front,side+'f')}</div>${more>0?`<span class="more">+${more}</span>`:''}</div>
+    <figcaption><b>${esc(plabel(front))}</b><span>${front.pos} · ${money(front.cap)}</span></figcaption>
+    ${ps.length>1?`<div class="cycle"><button type="button" data-cyc="-1" aria-label="Previous player">‹</button><span>${idx} / ${ps.length}</span><button type="button" data-cyc="1" aria-label="Next player">›</button></div>`:''}</figure>`;
+}
+function renderTeam(side){
+  const el=document.getElementById('team-'+side); const t=T[S[side]]; const ui=S.ui[side]; const ev=evalSide(side);
+  const after=ev.any?ev.newCap:null; const jp=jerseyPlayer(side);
+  const nR=t.players.filter(p=>p.grp==='R').length, nN=t.players.filter(p=>p.grp==='N').length;
+  el.style.setProperty('--tc',t.color);
+  const wm=document.getElementById('wm-'+side); wm.style.setProperty('--wc',t.color); wm.firstElementChild.textContent=t.tri;
+  let body='';
+  if(ui.tab==='picks'){
+    const ks=t.picks.slice().sort((a,b)=>a.year-b.year||a.round-b.round);
+    body=ks.length?ks.map(k=>{const sel=!!inTrade(k.id);return `<div class="row${sel?' sel':''}" data-id="${k.id}" role="button" tabindex="0" aria-pressed="${sel}">
+      <button class="add" type="button" tabindex="-1" aria-hidden="true">${sel?'✓':'+'}</button>
+      <div style="min-width:0"><div class="pname">${k.year} ${ORD[k.round]} round</div><div class="pline"><span>${k.orig===t.tri?'Own pick':'Acquired from '+k.orig}</span>${k.cond?'<span class="badge">Conditional</span>':''}</div></div>
+      <div class="pcap"><div class="term">${k.year} draft</div></div></div>`;}).join(''):`<div class="empty">No 2027–29 picks on hand.</div>`;
+  } else if(ui.tab==='dead'){
+    body=t.dead.length?`<div class="dead">`+t.dead.map(d=>`<div class="row" style="cursor:default;grid-template-columns:minmax(0,1fr) auto"><div style="min-width:0"><div class="pname">${esc(d.name)}</div><div class="pline">${esc(d.type)}</div></div><div class="pcap"><div class="amt">${money(d.amt)}</div></div></div>`).join('')+`</div>`
+      :`<div class="empty">No dead cap charges for 2026–27.</div>`;
+    if(t.ltir) body=`<div class="grp"><span>LTIR relief in use</span><span class="num">${money(t.ltir)}</span></div>`+body;
+  } else {
+    const q=ui.q.trim().toLowerCase();
+    let ps=t.players.filter(p=>p.grp===(ui.tab==='roster'?'R':'N'));
+    if(ui.pos!=='all') ps=ps.filter(p=>p.posg===ui.pos);
+    if(q) ps=ps.filter(p=>p.name.toLowerCase().includes(q));
+    const groups=[['F','Forwards'],['D','Defense'],['G','Goalies']];
+    body=groups.map(([g,lab])=>{const arr=ps.filter(p=>p.posg===g).sort((a,b)=>b.cap-a.cap);if(!arr.length)return'';
+      const sum=arr.filter(p=>p.grp==='R').reduce((a,p)=>a+p.cap,0);
+      return `<div class="grp"><span>${lab} · ${arr.length}</span>${ui.tab==='roster'?`<span class="num">${money(sum)}</span>`:''}</div>`+arr.map(playerRow).join('');}).join('')||`<div class="empty">No players match.</div>`;
+  }
+  const filt=(ui.tab==='roster'||ui.tab==='minors')?`<div class="filters">
+      <input class="search" id="q-${side}" type="search" placeholder="Search ${esc(t.name)}…" value="${esc(ui.q)}" aria-label="Search players">
+      <div class="chips" role="group" aria-label="Position">${['all','F','D','G'].map(x=>`<button type="button" class="chip" data-pos="${x}" aria-pressed="${ui.pos===x}">${x==='all'?'All':x}</button>`).join('')}</div></div>`:'';
+  const spaceAfter=ev.any?ev.newSpace:t.capSpace;
+  el.innerHTML=`<div class="team-head">
+      <div class="pick-row"><span class="side-tag">Team ${side.toUpperCase()}</span>
+        <select class="team-select" id="sel-${side}" aria-label="Team ${side.toUpperCase()}">${teamOptions(S[side],S[other(side)])}</select></div>
+      <div class="head-body">
+      ${rackHTML(side,t,jp)}
+      <div class="head-info">
+      <div class="stats">
+        <div class="stat"><div class="k">Cap hit</div><div class="v">${money(ev.any?ev.newCap:t.capHit)}</div></div>
+        <div class="stat"><div class="k">Cap space</div><div class="v${spaceAfter<0?' neg':''}">${money(spaceAfter)}</div></div>
+        <div class="stat"><div class="k">Roster</div><div class="v">${ev.any?ev.newRoster:t.roster}/23</div></div>
+        <div class="stat"><div class="k">Contracts</div><div class="v">${ev.any?ev.newContracts:t.contracts}/50</div></div>
+      </div>
+      ${gauge(t.capHit,after)}
+      <div class="meta">${ev.any?'Figures shown after the trade. ':''}${t.conf} Conference · ${t.div} Division${t.ltir?` · LTIR relief ${money(t.ltir)}`:''}</div>
+      </div></div>
+    </div>
+    <div class="tabs" role="tablist">
+      ${[['roster','NHL roster',nR],['minors','Minors & prospects',nN],['picks','Picks',t.picks.length],['dead','Dead cap',t.dead.length]].map(([k,l,c])=>`<button class="tab" role="tab" type="button" data-tab="${k}" aria-selected="${ui.tab===k}">${l}<span class="c">${c}</span></button>`).join('')}
+    </div>${filt}
+    <div class="list" id="list-${side}">${body}</div>`;
+}
+
+// ---------- tray ----------
+function renderSide(side){
+  const ev=evalSide(side); const t=ev.t; const o=other(side); const el=document.getElementById('side-'+side);
+  const items=ev.inn.map(it=>{const x=byId(it.id);
+    if(!x.name) return `<div class="item"><div style="min-width:0"><div class="nm">${pickLabel(x)}</div><div class="sm">Draft pick from ${S[o]}</div></div><div></div><button class="x" type="button" data-rm="${it.id}" aria-label="Remove">×</button></div>`;
+    const canRet=x.grp==='R'&&!relieved(x)&&!x.prevRet;
+    const eff=Math.round(x.cap*(1-(it.ret||0)/100));
+    const sm=[x.pos, x.grp==='N'?(ST[x.st]||'Minors')+' — no cap change':(relieved(x)?ST[x.st]+' — no cap change':''), `${x.yrs} yr${x.yrs>1?'s':''}`].filter(Boolean).join(' · ');
+    const retSel=canRet?`<select data-ret="${it.id}" aria-label="Salary retained by ${S[o]}" title="Salary retained by ${S[o]}">${[0,5,10,15,20,25,30,35,40,45,50].map(r=>`<option value="${r}"${r===(it.ret||0)?' selected':''}>${r?S[o]+' keeps '+r+'%':'No retention'}</option>`).join('')}</select>`:'<span></span>';
+    return `<div class="item"><div style="min-width:0"><div class="nm">${esc(plabel(x))}</div><div class="sm">${esc(sm)}</div></div>
+      <div style="display:grid;gap:3px;justify-items:end"><div class="amt">${money(eff)}</div>${retSel}</div>
+      <button class="x" type="button" data-rm="${it.id}" aria-label="Remove ${esc(x.name)}">×</button></div>`;}).join('');
+  const d=ev.delta;
+  el.innerHTML=`<h3><span class="sw" style="--tc:${t.color}"></span>${esc(t.name)} receive</h3>
+    <div class="recv">${items||`<div class="none">Nothing yet. Pick from the ${esc(T[S[o]].name)} board above.</div>`}</div>
+    <table class="ledger"><tbody>
+      <tr><td>Cap hit now</td><td class="r">${money(t.capHit)}</td></tr>
+      <tr><td>Salary going out</td><td class="r">${money(-ev.save)}</td></tr>
+      <tr><td>Salary coming in</td><td class="r">${money(ev.addIn,{sign:1})}</td></tr>
+      ${ev.retCharge?`<tr><td>Retained salary kept</td><td class="r">${money(ev.retCharge,{sign:1})}</td></tr>`:''}
+      <tr class="tot"><td>Cap hit after</td><td class="r">${money(ev.newCap)} <span class="${d>0?'delta-up':d<0?'delta-down':''}">(${d?money(d,{sign:1}):'±$0'})</span></td></tr>
+      <tr class="tot"><td>Cap space after</td><td class="r${ev.newSpace<0?' delta-up':''}">${money(ev.newSpace)}</td></tr>
+    </tbody></table>
+    <ul class="checks">${ev.any?ev.checks.map(([k,m])=>`<li class="${k}"><span class="i">${k==='ok'?'✓':k==='warn'?'!':'✕'}</span><span>${esc(m)}</span></li>`).join(''):''}</ul>`;
+  return ev;
+}
+
+function render(){
+  renderTeam('a');renderTeam('b');
+  const ea=renderSide('a'), eb=renderSide('b');
+  const v=document.getElementById('verdict'), sb=document.getElementById('scoreboard');
+  const hasA=S.items.some(i=>i.side==='a'), hasB=S.items.some(i=>i.side==='b');
+  let state='idle', msg;
+  if(!S.items.length) msg='Add players or picks';
+  else if(!hasA||!hasB) msg='Both teams must send something';
+  else if(ea.legal&&eb.legal){state='ok';msg='Trade approved';}
+  else {state='no';msg='Blocked: '+[!ea.legal&&ea.t.tri,!eb.legal&&eb.t.tri].filter(Boolean).join(' & ')+' over the limit';}
+  v.className='verdict '+state; v.textContent=msg; sb.className='scoreboard '+state;
+  [['a',ea],['b',eb]].forEach(([s,ev])=>{const el=document.getElementById('sb-'+s);const sp=ev.any?ev.newSpace:ev.t.capSpace;
+    el.style.setProperty('--tc',ev.t.color);
+    el.innerHTML=`<div class="sb-tri"><i></i>${ev.t.tri}</div><div class="sb-val num${sp<0?' neg':''}">${money(sp)}</div><div class="sb-lbl">${ev.any?'Cap space after':'Cap space'}</div>`;});
+  const n=document.getElementById('notes');
+  n.innerHTML=S.sample?`<span><b>Example trade loaded.</b> Press Reset to start your own.</span>`:'<span>Retention is set by the team sending the player; that share stays on its cap for the rest of the contract.</span>';
+  renderSaved(); save(); if(typeof renderScout==="function") renderScout();
+}
+
+// ---------- events ----------
+document.addEventListener('click',e=>{
+  const rm=e.target.closest('[data-rm]'); if(rm){S.items=S.items.filter(it=>it.id!==rm.dataset.rm);S.sample=false;render();return;}
+  const team=e.target.closest('.team'); if(!team)return; const side=team.id.slice(-1);
+  const fr=e.target.closest('[data-front]'); if(fr){S.jersey[side]=fr.dataset.front;renderTeam(side);save();return;}
+  const cy=e.target.closest('[data-cyc]'); if(cy){const ps=S.items.filter(it=>it.side===side&&byId(it.id).name).map(it=>it.id);const f=jerseyPlayer(side);let i=ps.indexOf(f&&f.id);i=(i+ +cy.dataset.cyc+ps.length)%ps.length;S.jersey[side]=ps[i];renderTeam(side);save();return;}
+  const tab=e.target.closest('[data-tab]'); if(tab){S.ui[side].tab=tab.dataset.tab;S.ui[side].q='';renderTeam(side);save();return;}
+  const pos=e.target.closest('[data-pos]'); if(pos){S.ui[side].pos=pos.dataset.pos;renderTeam(side);save();return;}
+  const row=e.target.closest('.row[data-id]'); if(row){const sc=document.getElementById('list-'+side).scrollTop;toggle(side,row.dataset.id);document.getElementById('list-'+side).scrollTop=sc;}
+});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.row[data-id]')){e.preventDefault();e.target.click();}});
+document.addEventListener('change',e=>{
+  const s=e.target.closest('.team-select'); if(s){const side=s.id.slice(-1);S[side]=s.value;S.items=S.items.filter(it=>!it.id.startsWith(s.value+':')&&byId(it.id)&&(it.id.split(':')[0]===S.a||it.id.split(':')[0]===S.b));S.items=S.items.filter(it=>it.id.split(':')[0]===S[it.side]);S.ui[side].q='';S.sample=false;render();return;}
+  const r=e.target.closest('[data-ret]'); if(r){const it=inTrade(r.dataset.ret);if(it){it.ret=+r.value;S.sample=false;render();}}
+});
+document.addEventListener('input',e=>{const q=e.target.closest('.search');if(!q)return;const side=q.id.slice(-1);S.ui[side].q=q.value;
+  const pos=q.selectionStart;renderTeam(side);const n=document.getElementById('q-'+side);n.focus();try{n.setSelectionRange(pos,pos);}catch(_){} save();});
+
+function summary(){
+  const lines=[`NHL Trade Machine — 2026-27`];
+  ['a','b'].forEach(side=>{const ev=evalSide(side);const t=ev.t;
+    lines.push('',`${t.name} receive:`);
+    if(!ev.inn.length)lines.push('  (nothing)');
+    ev.inn.forEach(it=>{const x=byId(it.id);lines.push('  • '+(x.name?`${plabel(x)} (${x.pos}) ${money(Math.round(x.cap*(1-(it.ret||0)/100)))}${it.ret?`, ${S[other(side)]} retains ${it.ret}%`:''}`:pickLabel(x)));});
+    lines.push(`  Cap hit ${money(t.capHit)} → ${money(ev.newCap)}; space ${money(ev.newSpace)}${ev.legal?'':' — NOT LEGAL'}`);});
+  return lines.join('\n');}
+document.getElementById('btn-copy').addEventListener('click',()=>{const txt=summary();
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>toast('Summary copied'),()=>showCopy(txt));}else showCopy(txt);});
+function showCopy(txt){const n=document.getElementById('notes');n.innerHTML=`<span>Copy the summary below:</span><textarea class="copybox" id="copybox" readonly>${esc(txt)}</textarea>`;const ta=document.getElementById('copybox');ta.focus();ta.select();}
+document.getElementById('btn-reset').addEventListener('click',()=>{S.items=[];S.sample=false;render();toast('Trade cleared');});
+
+// saved trades
+function renderSaved(){const list=store.get('tm.saved',[]);const box=document.getElementById('saved');box.hidden=!list.length;
+  document.getElementById('saved-list').innerHTML=list.map((s,i)=>`<div class="saved-item"><span><b>${esc(s.a)} ↔ ${esc(s.b)}</b> · ${esc(s.label)}</span><span style="display:flex;gap:6px"><button class="btn" type="button" data-load="${i}">Load</button><button class="btn" type="button" data-del="${i}">Delete</button></span></div>`).join('');}
+document.getElementById('btn-save').addEventListener('click',()=>{if(!S.items.length){toast('Add something to the trade first');return;}
+  const list=store.get('tm.saved',[]);const names=S.items.map(it=>{const x=byId(it.id);return x.name?x.name.split(' ').slice(-1)[0]:x.year+' R'+x.round;});
+  list.unshift({a:S.a,b:S.b,items:S.items,label:names.slice(0,4).join(', ')+(names.length>4?'…':'')});store.set('tm.saved',list.slice(0,20));renderSaved();toast('Trade saved in this browser');});
+document.getElementById('saved-list').addEventListener('click',e=>{const l=e.target.closest('[data-load]'),d=e.target.closest('[data-del]');const list=store.get('tm.saved',[]);
+  if(l){const s=list[+l.dataset.load];S.a=s.a;S.b=s.b;S.items=s.items.filter(it=>byId(it.id));S.sample=false;render();toast('Trade loaded');window.scrollTo({top:0,behavior:'smooth'});}
+  if(d){list.splice(+d.dataset.del,1);store.set('tm.saved',list);renderSaved();toast('Trade deleted');}});
+
+// ---------- scout's take (AI) ----------
+let sampleFn=null, scoutCtl=null, scoutKey=null, scoutData=null, scoutBusy=false, scoutOff=false;
+const tradeKey=()=>JSON.stringify([S.a,S.b,S.items.map(i=>[i.side,i.id,i.ret||0])]);
+const STATUS={'':'NHL roster',I:'injured reserve',L:'long-term IR',S:'season-opening IR',E:'season-ending IR',O:'loaned out',J:'in junior',X:'inactive',U:'suspended'};
+function describe(it,fromTri){const x=byId(it.id); if(!x.name) return '- '+pickLabel(x)+' draft pick';
+  const st=x.grp==='N'?(x.st==='J'?'in junior':x.st==='O'?'loaned overseas':'in the minors/AHL'):STATUS[x.st]||'NHL roster';
+  return `- ${x.name}${x.num?' (#'+x.num+')':''}: ${x.pos}, age ${x.age??'?'}, ${money(x.cap)} cap hit, ${x.yrs} season${x.yrs>1?'s':''} left then ${EX[x.ex]||x.ex}, ${st}${x.elc?', entry-level contract':''}${x.cl?', '+x.cl:''}${it.ret?`; ${fromTri} retains ${it.ret}% so the new team pays ${money(Math.round(x.cap*(1-it.ret/100)))}`:''}`;}
+function teamContext(t){return t.players.filter(p=>p.grp==='R').sort((a,b)=>b.cap-a.cap).slice(0,8).map(p=>`${p.name} (${p.pos}, ${p.age}, ${money(p.cap)})`).join('; ');}
+function scoutPrompt(){
+  const ea=evalSide('a'), eb=evalSide('b'), A=ea.t, B=eb.t;
+  const sends=s=>S.items.filter(i=>i.side===s).map(i=>describe(i,S[s])).join('\n')||'- nothing';
+  const cap=(ev)=>`${ev.t.name}: cap hit ${money(ev.t.capHit)} -> ${money(ev.newCap)}, cap space after ${money(ev.newSpace)}, ${ev.legal?'cap-legal':'NOT cap-legal'}`;
+  return `You are a sharp, fair NHL analyst grading a hypothetical trade for a fan-made trade simulator. Season: 2026-27, salary cap $104M.
+Treat the contract and cap data below as accurate and current. Use your general hockey knowledge about these players (quality, role, age curve, injury history) and the teams' situations, but do not state uncertain specifics as fact (for example who wears a letter, or a player's current stats). Judge hockey value first, then contracts, term and cap. Be candid: if one side gets fleeced, say so plainly. Keep it fun but grounded, written for regular fans.
+
+${A.name} SEND:
+${sends('a')}
+
+${B.name} SEND:
+${sends('b')}
+
+CAP RESULT
+${cap(ea)}
+${cap(eb)}
+
+CONTEXT (each team's highest-paid NHL players before the trade)
+${A.name}: ${teamContext(A)}
+${B.name}: ${teamContext(B)}
+
+Reply with only JSON in exactly this shape:
+{"a":{"grade":"letter grade A+ to F","headline":"punchy summary, max 8 words","take":"2-3 sentences on why this is good or bad for ${A.name}"},"b":{"grade":"...","headline":"...","take":"2-3 sentences on why this is good or bad for ${B.name}"},"verdict":"one sentence on who wins the trade"}`;}
+const gclass=g=>{const c=String(g||'').trim()[0]?.toUpperCase();return c==='A'?'g-a':c==='B'?'g-b':c==='C'?'g-c':'g-d';};
+function renderScout(){
+  if(!sampleFn||scoutOff) return;
+  const box=document.getElementById('scout'), body=document.getElementById('scout-body'), btn=document.getElementById('btn-scout');
+  box.hidden=false;
+  const hasA=S.items.some(i=>i.side==='a'), hasB=S.items.some(i=>i.side==='b');
+  if(scoutBusy){btn.textContent='Stop';btn.disabled=false;return;}
+  btn.disabled=!(hasA&&hasB);
+  btn.textContent=scoutData&&scoutKey===tradeKey()?'Ask again':'Get the scouting report';
+  if(scoutData&&scoutKey===tradeKey()){
+    const card=(s)=>{const d=scoutData[s]||{};const t=T[S[s]];return `<div class="grade" style="--tc:${t.color}"><div class="gl ${gclass(d.grade)}">${esc(String(d.grade||'?').slice(0,2))}</div>
+      <div style="min-width:0"><div class="who">${esc(t.name)}</div><h4>${esc(d.headline||'')}</h4><p>${esc(d.take||'')}</p></div></div>`;};
+    body.innerHTML=`<div class="grades">${card('a')}${card('b')}</div>${scoutData.verdict?`<div class="scout-verdict">${esc(scoutData.verdict)}</div>`:''}`;
+  } else if(scoutData){ body.innerHTML=`<div class="scout-wait">The trade changed. Get a fresh report for this version.</div>`; }
+  else if(!(hasA&&hasB)){ body.innerHTML=''; }
+  else if(!body.querySelector('.scout-err')) body.innerHTML='';
+}
+async function runScout(){
+  const btn=document.getElementById('btn-scout'), body=document.getElementById('scout-body');
+  if(scoutBusy){scoutCtl&&scoutCtl.abort();return;}
+  const key=tradeKey(); const again=scoutData&&scoutKey===key;
+  scoutBusy=true; scoutCtl=new AbortController(); renderScout();
+  body.innerHTML='<div class="scout-wait"><span class="puck"></span>The scouts are breaking down the deal. This usually takes 10 to 30 seconds.</div>';
+  try{
+    const data=await sampleFn.json(scoutPrompt(),{modelTier:'default',effort:'low',signal:scoutCtl.signal,cache:again?{refresh:true}:true});
+    if(!data||!data.a||!data.b) throw {code:'invalid_json'};
+    scoutData=data; scoutKey=key;
+  }catch(e){
+    const c=e&&(e.code||(e.name==='AbortError'?'cancelled':'upstream_error'));
+    if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(c)){scoutOff=true;document.getElementById('scout').hidden=true;scoutBusy=false;return;}
+    const msg=c==='cancelled'?'':c==='rate_limited'?(SCOUT_API?'The scouts are tapped out for today. Free reports reset every night at midnight UTC.':'Too many reports in a short time. Give it a minute and try again.')
+      :c==='invalid_json'?'The scouts gave a garbled report. Try again.':c==='session_expired'?'Sign in to Claude again to get a report.'
+      :c==='refused'?'The scouts passed on this one. Try a different trade.':'Something went wrong reaching the scouts. Try again.';
+    scoutData=null; body.innerHTML=msg?`<div class="scout-err">${esc(msg)}</div>`:'';
+  }
+  scoutBusy=false; renderScout();
+}
+document.getElementById('btn-scout').addEventListener('click',runScout);
+const SCOUT_API='/api/scout';
+(async()=>{try{
+  if(SCOUT_API){
+    sampleFn={json:async(prompt,o)=>{const r=await fetch(SCOUT_API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({prompt}),signal:o&&o.signal});
+      const j=await r.json().catch(()=>null); if(!r.ok||!j||!j.result) throw {code:r.status===429?'rate_limited':(j&&j.code)||'upstream_error'}; return j.result;}};
+    const n=document.querySelector('.scout-note'); if(n) n.textContent='An AI opinion on who wins the deal. For fun, not official analysis.';
+    renderScout(); return;
+  }
+  if(!window.claude||!window.claude.use) return; const s=await window.claude.use('sample'); if(s){sampleFn=s;renderScout();}
+}catch(_){}})();
+
+render();
+})();
+</script>
+
+</body>
+</html>
