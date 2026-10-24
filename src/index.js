@@ -5,7 +5,7 @@
 // gpt-oss-120b costs ~72 neurons a report (~135 a day free); gpt-oss-20b ~30 (~330 a day).
 const MODEL = "@cf/openai/gpt-oss-120b";
 const FALLBACK = "@cf/openai/gpt-oss-20b";
-const LEAGUES = ["NHL", "NBA", "NFL"];
+const LEAGUES = ["NHL", "NBA", "NFL", "MLB"];
 const PROMPT_RE = new RegExp(`^You are a sharp, fair (${LEAGUES.join("|")}) analyst grading a hypothetical trade`);
 
 // Best-effort per-visitor limit. Counters live in each Worker instance's memory, so they are
